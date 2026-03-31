@@ -1277,22 +1277,28 @@ img {
     }
 }
 
+
 /* =============================================
-   — Dark Mode Theme
+   — Polished Dark Mode Theme
    ============================================= */
-body.dark-mode {
-    --bg-primary: #121212;
-    --bg-secondary: #1E1E1E;
-    --bg-tertiary: #2C2C2C;
-    --text-main: #F9FAFB;
-    --text-muted: #9CA3AF;
-    --text-light: #6B7280;
-    --accent: #FFFFFF;
-    --accent-hover: #D1D5DB;
-    --border: #333333;
-    --border-focus: #FFFFFF;
+html.dark-mode {
+    --bg-primary: #0A0A0A;
+    --bg-secondary: #141414;
+    --bg-tertiary: #1E1E1E;
     
-    /* Slightly darker shadows for dark mode */
+    --text-main: #EDEDED;
+    --text-muted: #A1A1AA;
+    --text-light: #71717A;
+    
+    --accent: #FFFFFF;
+    --accent-hover: #E5E5E5;
+    
+    --border: #27272A;
+    --border-focus: #52525B;
+    
+    --surface-1: #141414;
+    --surface-2: #1E1E1E;
+
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
@@ -1301,31 +1307,66 @@ body.dark-mode {
     color-scheme: dark;
 }
 
+html.dark-mode body {
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+}
+
 /* Base button text needs adapting when accent is white */
-body.dark-mode .btn-primary {
+html.dark-mode .btn-primary {
+    background-color: var(--accent);
     color: #000000;
 }
-body.dark-mode .btn-primary:hover {
+html.dark-mode .btn-primary:hover {
+    background-color: var(--accent-hover);
     color: #000000;
 }
 
-/* Adjustments for pure black text that might be hardcoded */
-body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
-body.dark-mode h4, body.dark-mode h5, body.dark-mode p {
+html.dark-mode .btn-outline {
+    border-color: var(--border);
     color: var(--text-main);
+}
+html.dark-mode .btn-outline:hover {
+    background-color: var(--bg-secondary);
+}
+
+/* Fix navbar transparency in dark mode */
+html.dark-mode .navbar {
+    background: rgba(10, 10, 10, 0.85);
+    border-bottom: 1px solid var(--border);
+}
+
+/* Fix product cards and admin components */
+html.dark-mode .product-card,
+html.dark-mode .stat-card,
+html.dark-mode .data-table-wrapper,
+html.dark-mode .admin-login-card,
+html.dark-mode .admin-modal,
+html.dark-mode .cart-sidebar {
+    background-color: var(--bg-secondary);
+    border-color: var(--border);
+}
+
+html.dark-mode .cart-header,
+html.dark-mode .cart-footer,
+html.dark-mode .admin-sidebar-header,
+html.dark-mode .admin-sidebar-footer,
+html.dark-mode .data-table-header,
+html.dark-mode .admin-modal-header {
+    border-color: var(--border);
 }
 
 /* Fix inputs and modals in dark mode */
-body.dark-mode input,
-body.dark-mode textarea,
-body.dark-mode select {
-    background-color: var(--surface-2);
+html.dark-mode input:not([type="checkbox"]):not([type="radio"]),
+html.dark-mode textarea,
+html.dark-mode select {
+    background-color: var(--bg-primary);
     color: var(--text-main);
-    border-color: var(--border);
+    border: 1px solid var(--border);
 }
-body.dark-mode input:focus,
-body.dark-mode textarea:focus,
-body.dark-mode select:focus {
-    border-color: var(--border-focus);
+html.dark-mode input:focus,
+html.dark-mode textarea:focus,
+html.dark-mode select:focus {
+    border-color: var(--accent);
     outline: none;
 }
