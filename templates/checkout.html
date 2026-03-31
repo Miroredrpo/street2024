@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Checkout -  Store Name{% endblock %}
+{% block title %}Checkout -  MaSha_Trends{% endblock %}
 
 {% block content %}
 <style>
@@ -201,6 +201,7 @@
                         <div>${prod.title}</div>
                         ${item.size ? `<div style="color: var(--text-muted); font-size: 0.8rem;">Size: ${item.size}</div>` : ''}
                         <div style="color: var(--text-muted); font-size: 0.9rem;">Qty: ${item.quantity} x Rs. ${prod.price}</div>
+                        <div class="checkout-item-timer" data-expires="${item.expires_at || ''}" style="color:var(--error-color); font-size:0.8rem; font-weight:600; margin-top:4px;"></div>
                     </div>
                 </div>
                 <div class="item-price">Rs. ${lineTotal}</div>
@@ -209,6 +210,44 @@
         });
 
         updateCheckoutTotalDisplay();
+        startCheckoutTimers();
+    }
+
+    let checkoutTimerInterval = null;
+
+    function startCheckoutTimers() {
+        if (checkoutTimerInterval) clearInterval(checkoutTimerInterval);
+        
+        function updateTimers() {
+            const timers = document.querySelectorAll('.checkout-item-timer');
+            let needRefresh = false;
+
+            timers.forEach(timer => {
+                const expiresAt = timer.getAttribute('data-expires');
+                if (!expiresAt) return;
+                
+                const now = new Date();
+                const expiry = new Date(expiresAt + (expiresAt.endsWith('Z') ? '' : 'Z'));
+                const diffMs = expiry - now;
+
+                if (diffMs <= 0) {
+                    timer.textContent = 'Expired - Refreshing...';
+                    needRefresh = true;
+                } else {
+                    const mins = Math.floor(diffMs / 60000);
+                    const secs = Math.floor((diffMs % 60000) / 1000);
+                    timer.textContent = `Reserved: ${mins}m ${secs}s left`;
+                }
+            });
+
+            if (needRefresh) {
+                // If anything expired, just reload data
+                loadCheckoutData();
+            }
+        }
+        
+        updateTimers();
+        checkoutTimerInterval = setInterval(updateTimers, 1000);
     }
 
     function updateCheckoutTotalDisplay() {

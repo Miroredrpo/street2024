@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Log in / Sign up - Store Name{% endblock %}
+{% block title %}Log in / Sign up - MaSha_Trends{% endblock %}
 
 {% block content %}
 <style>
@@ -90,8 +90,15 @@
         // Redirect home if already logged in
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
-            window.location.href = '/';
+            window.location.replace('/');
         }
+        
+        // Listen for auth state changes
+        sb.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                window.location.replace('/');
+            }
+        });
     });
 
     window.toggleAuthMode = function () {
@@ -147,8 +154,12 @@
                 }
                 return;
             }
-            // For login
-            window.location.href = '/';
+            // For login fallback
+            setTimeout(() => {
+                if (window.location.pathname === '/login') {
+                    window.location.replace('/');
+                }
+            }, 800);
         } catch (error) {
             showAuthError(error.message);
             btn.textContent = originalText;

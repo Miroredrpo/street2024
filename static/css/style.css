@@ -377,6 +377,7 @@ img {
     font-weight: 500;
     line-height: 1.4;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -797,6 +798,7 @@ img {
     font-weight: 500;
     margin-bottom: 4px;
     display: -webkit-box;
+    line-clamp: 1;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -1467,3 +1469,11 @@ html.dark-mode select:focus {
 .doodle-fill { fill: var(--text-main); opacity: 0.1; }
 .doodle-fill-light { fill: var(--text-main); opacity: 0.05; }
 .doodle-stroke { stroke: var(--text-main); opacity: 0.15; }
+
+/* Theme Transition Optimization */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *:before,
+html.theme-transition *:after {
+    transition: background-color 0.3s ease, background 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, stroke 0.3s ease, box-shadow 0.3s ease !important;
+}

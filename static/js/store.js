@@ -10,6 +10,7 @@
     // ===========================
     let currentUser = null;
     let cartItems = [];
+    let cartTimerInterval = null;
     let isLoginMode = true;
     let pendingCartProductId = null; // Product to add after login (frictionless flow)
 
@@ -44,9 +45,14 @@
 
         // Listen for auth changes
         sb.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-                currentUser = session.user;
-                onUserSignedIn();
+            if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+                if (session && session.user) {
+                    currentUser = session.user;
+                    onUserSignedIn();
+                } else {
+                    currentUser = null;
+                    onUserSignedOut();
+                }
             } else if (event === 'SIGNED_OUT') {
                 currentUser = null;
                 cartItems = [];
@@ -369,6 +375,7 @@
                     <div class="cart-item-details">
                         <div class="cart-item-title">${escapeHtml(product.title)}</div>
                         ${item.size ? `<div class="cart-item-size" style="font-size: var(--font-size-xs); color: var(--text-muted);">Size: ${escapeHtml(item.size)}</div>` : ''}
+                        <div class="cart-item-timer highlight-alert" data-expires="${item.expires_at || ''}" style="font-size:var(--font-size-xs); color:var(--info-color); margin-top:4px;"></div>
                         <div class="cart-item-price">Rs. ${parseFloat(product.price).toFixed(2)}</div>
                     </div>
                     <div class="cart-item-actions">
@@ -389,11 +396,58 @@
         // Show footer with total
         if (cartFooter) {
             cartFooter.style.display = 'block';
-            document.getElementById('cart-total-value').textContent = `Rs. ${total.toFixed(2)}`;
-            // Reset checkout section
-            document.getElementById('checkout-section').style.display = 'none';
-            document.getElementById('proceed-checkout-btn').style.display = 'block';
+            const totalValEl = document.getElementById('cart-total-value');
+            if(totalValEl) totalValEl.textContent = `Rs. ${total.toFixed(2)}`;
+            
+            // Re-hide inline checkout if it exists (legacy store checkout)
+            const checkoutSec = document.getElementById('checkout-section');
+            if (checkoutSec) checkoutSec.style.display = 'none';
+
+            const proceedBtn = document.getElementById('proceed-checkout-btn');
+            if (proceedBtn) proceedBtn.style.display = 'block';
         }
+
+        startCartTimers();
+    }
+
+    function startCartTimers() {
+        if (cartTimerInterval) clearInterval(cartTimerInterval);
+        
+        function updateTimers() {
+            const timers = document.querySelectorAll('.cart-item-timer');
+            let needRefresh = false;
+            
+            timers.forEach(timer => {
+                const expiresAt = timer.getAttribute('data-expires');
+                if (!expiresAt || expiresAt === 'null' || expiresAt === 'undefined') {
+                    timer.textContent = '';
+                    return;
+                }
+                
+                const now = new Date();
+                const expiry = new Date(expiresAt.replace(/\+00:00$/, 'Z'));
+                const diffMs = expiry - now;
+
+                if (diffMs <= 0) {
+                    timer.textContent = 'Expired - Refreshing...';
+                    timer.style.color = 'var(--error-color)';
+                    needRefresh = true;
+                } else {
+                    const mins = Math.floor(diffMs / 60000);
+                    const secs = Math.floor((diffMs % 60000) / 1000);
+                    timer.textContent = `Reserved: ${mins}m ${secs}s`;
+                    timer.style.color = mins < 2 ? 'var(--error-color)' : 'var(--text-muted)';
+                }
+            });
+
+            if (needRefresh) {
+                // If anything expired, refetch
+                fetchCart();
+            }
+        }
+        
+        updateTimers();
+        cartTimerInterval = setInterval(updateTimers, 1000);
     }
 
     // In-cart login (frictionless)
@@ -440,12 +494,37 @@
                 body: JSON.stringify({ product_id: productId, quantity, size })
             });
             await fetchCart();
+            
+            // Refresh product grid to update Out of Stock tags immediately
+            if (document.getElementById('product-grid')) {
+                fetchProducts();
+            }
+            // Refresh PDP
+            if (window.location.pathname.startsWith('/product/')) {
+                let currentPDPStock = document.getElementById('pdp-stock');
+                if (currentPDPStock) {
+                    let matches = currentPDPStock.textContent.match(/\d+/);
+                    let stockVal = matches ? parseInt(matches[0], 10) : (currentPDPStock.textContent.includes('In Stock') ? 11 : 0);
+                    
+                    let newStock = stockVal - quantity;
+                    if (newStock <= 0) {
+                        currentPDPStock.innerHTML = '<span class="dot out-of-stock"></span><span>Out of Stock</span>';
+                        let addBtn = document.querySelector('.pdp-actions .btn-primary');
+                        if (addBtn) {
+                            addBtn.disabled = true;
+                            addBtn.textContent = 'Out of Stock';
+                        }
+                    } else if (newStock <= 10) {
+                        currentPDPStock.innerHTML = `<span class="dot low-stock"></span><span>Only ${newStock} left</span>`;
+                    }
+                }
+            }
 
             // Open cart to show the item added
             if (!cartSidebar.classList.contains('open')) {
                 toggleCart();
             }
-            showToast('Added to cart', 'success');
+            showToast('Added to cart! Item reserved for 15 minutes.', 'success');
         } catch (error) {
             showToast('Failed to add to cart: ' + error.message, 'error');
         }
@@ -479,7 +558,18 @@
         try {
             await apiFetch(`/api/cart/${cartItemId}`, { method: 'DELETE' });
             await fetchCart();
-            showToast('Item removed', 'info');
+            
+            // Refresh product grid to update Out of Stock tags immediately
+            if (document.getElementById('product-grid')) {
+                fetchProducts();
+            }
+            
+            // Also refresh PDP if we are on a PDP
+            if (window.location.pathname.startsWith('/product/')) {
+                window.location.reload(); 
+            }
+
+            showToast('Item removed from cart, inventory released.', 'info');
         } catch (error) {
             showToast('Failed to remove item', 'error');
         }
@@ -488,8 +578,10 @@
     // Checkout flow
     window.showCheckoutForm = function () {
         if (!cartItems || cartItems.length === 0) return;
-        document.getElementById('proceed-checkout-btn').style.display = 'none';
-        document.getElementById('checkout-section').style.display = 'block';
+        const proceedBtn = document.getElementById('proceed-checkout-btn');
+        const checkoutSec = document.getElementById('checkout-section');
+        if (proceedBtn) proceedBtn.style.display = 'none';
+        if (checkoutSec) checkoutSec.style.display = 'block';
         document.getElementById('shipping-address')?.focus();
     };
 
@@ -514,9 +606,12 @@
             showToast('Order placed successfully!', 'success');
 
             // Reset
-            document.getElementById('checkout-section').style.display = 'none';
-            document.getElementById('proceed-checkout-btn').style.display = 'block';
-            document.getElementById('shipping-address').value = '';
+            const checkoutSec = document.getElementById('checkout-section');
+            if (checkoutSec) checkoutSec.style.display = 'none';
+            const proceedBtn = document.getElementById('proceed-checkout-btn');
+            if (proceedBtn) proceedBtn.style.display = 'block';
+            const shippingAddress = document.getElementById('shipping-address');
+            if (shippingAddress) shippingAddress.value = '';
 
             await fetchCart();
             setTimeout(() => toggleCart(), 1500);

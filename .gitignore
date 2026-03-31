@@ -4,3 +4,4 @@ migration.sql
 /venv
 __pycache__/
 *.pyc
+cart_migration.sql

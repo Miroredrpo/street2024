@@ -79,6 +79,8 @@ CREATE TABLE public.cart_items (
   product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
   size TEXT,
   quantity INTEGER NOT NULL DEFAULT 1,
+  added_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE,
   UNIQUE(user_id, product_id)
 );
 

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}{{ product.title }} — Store Name{% endblock %}
+{% block title %}{{ product.title }} — MaSha_Trends{% endblock %}
 
 {% block head %}
-<meta name="description" content="{{ product.description[:160] if product.description else 'Shop ' + product.title + ' at Store Name.' }}">
+<meta name="description" content="{{ product.description[:160] if product.description else 'Shop ' + product.title + ' at MaSha_Trends.' }}">
 {% endblock %}
 
 {% block content %}
@@ -16,7 +16,7 @@
                     id="pdp-product-image"
                     src="{{ product.image_url or url_for('static', filename='fallback.svg') }}"
                     alt="{{ product.title }}"
-                    onerror="this.onerror=null; this.src='{{ url_for('static', filename='fallback.svg') }}';"
+                    onerror="this.onerror=null; this.src='/static/fallback.svg';"
                 >
             </div>
             {% if product.images and product.images|length > 0 %}
@@ -46,7 +46,7 @@
             <div class="pdp-price">Rs. {{ "%.2f"|format(product.price|float) }}</div>
 
             {% if product.stock is not none %}
-            <div class="pdp-stock">
+            <div id="pdp-stock" class="pdp-stock">
                 {% if product.stock > 10 %}
                     <span class="dot in-stock"></span>
                     <span>In Stock</span>
@@ -128,8 +128,9 @@
     let pdpQty = 1;
 
     function changeQty(delta) {
-        const maxStock = {{ product.stock or 1 }};
-        pdpQty = Math.max(1, Math.min(maxStock, pdpQty + delta));
+        const stockStr = "{{ product.stock }}";
+        const maxStock = stockStr !== "None" && stockStr !== "" ? parseInt(stockStr, 10) : 1;
+        pdpQty = Math.max(1, Math.min(maxStock > 0 ? maxStock : 1, pdpQty + delta));
         document.getElementById('pdp-qty').textContent = pdpQty;
     }
 </script>
