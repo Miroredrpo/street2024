@@ -20,6 +20,9 @@ def add_cache_headers(response):
         elif request.path.startswith('/static/'):
             # Cache static assets intensely
             response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        elif request.path == '/api/products' or request.path.startswith('/api/products/'):
+            # Cache products API to reduce db queries explicitly for vercel serverless
+            response.headers['Cache-Control'] = 'public, max-age=60, s-maxage=300, stale-while-revalidate=600'
     return response
 
 

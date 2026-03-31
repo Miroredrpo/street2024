@@ -1276,3 +1276,56 @@ img {
         width: 100%;
     }
 }
+
+/* =============================================
+   — Dark Mode Theme
+   ============================================= */
+body.dark-mode {
+    --bg-primary: #121212;
+    --bg-secondary: #1E1E1E;
+    --bg-tertiary: #2C2C2C;
+    --text-main: #F9FAFB;
+    --text-muted: #9CA3AF;
+    --text-light: #6B7280;
+    --accent: #FFFFFF;
+    --accent-hover: #D1D5DB;
+    --border: #333333;
+    --border-focus: #FFFFFF;
+    
+    /* Slightly darker shadows for dark mode */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 8px 10px -6px rgba(0, 0, 0, 0.7);
+
+    color-scheme: dark;
+}
+
+/* Base button text needs adapting when accent is white */
+body.dark-mode .btn-primary {
+    color: #000000;
+}
+body.dark-mode .btn-primary:hover {
+    color: #000000;
+}
+
+/* Adjustments for pure black text that might be hardcoded */
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+body.dark-mode h4, body.dark-mode h5, body.dark-mode p {
+    color: var(--text-main);
+}
+
+/* Fix inputs and modals in dark mode */
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+    background-color: var(--surface-2);
+    color: var(--text-main);
+    border-color: var(--border);
+}
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+    border-color: var(--border-focus);
+    outline: none;
+}

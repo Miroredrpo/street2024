@@ -22,8 +22,14 @@
         const SUPABASE_ANON_KEY = "{{ config['SUPABASE_KEY'] }}";
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
-
-    {% block head %}{% endblock %}
+    <script>
+        // Init dark mode before body renders to prevent flicker
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark-mode');
+            // document.body might not be ready, so we toggle an observer or just apply to documentElement
+        }
+    </script>
+    {% block head %}{% endblock %}{% endblock %}
 </head>
 <body>
 
@@ -42,6 +48,9 @@
                 Hello, <span id="user-name" class="nav-user-name"></span>
             </span>
 
+            <button id="theme-btn" class="btn-icon" onclick="toggleTheme()" aria-label="Toggle Dark Mode" style="margin-right: 8px;">
+                <span id="theme-icon">🌙</span>
+            </button>
             <button id="cart-btn" class="btn-icon" onclick="toggleCart()" aria-label="Open shopping cart">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
@@ -98,5 +107,24 @@
     <script src="{{ url_for('static', filename='js/store.js') }}" defer></script>
     {% block scripts %}{% endblock %}
 
+    <script>
+        // Update body class once loaded
+        if (document.documentElement.classList.contains('dark-mode')) {
+            document.body.classList.add('dark-mode');
+            document.getElementById('theme-icon').textContent = '☀️';
+        }
+
+        window.toggleTheme = function() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            if (isDark) {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+        };
+    </script>
 </body>
 </html>

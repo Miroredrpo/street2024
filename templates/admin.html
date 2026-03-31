@@ -22,6 +22,11 @@
         const SUPABASE_ANON_KEY = "{{ config['SUPABASE_KEY'] }}";
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
 </head>
 <body>
 
@@ -72,6 +77,7 @@
                     <h1 id="admin-page-title">Dashboard</h1>
                 </div>
                 <div class="admin-topbar-right">
+                    <button class="btn btn-ghost btn-sm" onclick="toggleTheme()" aria-label="Toggle Dark Mode" style="font-size: 1rem;"><span id="admin-theme-icon">🌙</span></button>
                     <a href="/" class="btn btn-secondary btn-sm">View Store</a>
                     <button class="btn btn-ghost btn-sm" onclick="adminLogout()">Log out</button>
                 </div>
@@ -278,5 +284,25 @@
     <script src="{{ url_for('static', filename='js/api.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
 
+    <script>
+        if (document.documentElement.classList.contains('dark-mode')) {
+            document.body.classList.add('dark-mode');
+            const icon = document.getElementById('admin-theme-icon');
+            if (icon) icon.textContent = '☀️';
+        }
+
+        window.toggleTheme = function() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            if (isDark) {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            const icon = document.getElementById('admin-theme-icon');
+            if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+        };
+    </script>
 </body>
 </html>
