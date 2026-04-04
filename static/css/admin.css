@@ -2,13 +2,13 @@
     — Admin CMS Stylesheet
    ============================================= */
 
-/* --- Admin Layout --- */
+/* Admin Layout */
 .admin-wrapper {
     display: flex;
     min-height: 100vh;
 }
 
-/* --- Sidebar --- */
+/* Sidebar */
 .admin-sidebar {
     width: 240px;
     background: var(--bg-primary);
@@ -120,7 +120,7 @@
     color: var(--text-muted);
 }
 
-/* --- Main Content --- */
+/* Main Content */
 .admin-main {
     margin-left: 240px;
     flex: 1;
@@ -161,7 +161,7 @@
     padding: var(--space-4);
 }
 
-/* --- Dashboard Stats --- */
+/* Dashboard Stats */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -211,7 +211,7 @@
     margin-top: var(--space-1);
 }
 
-/* --- Data Tables --- */
+/* Data Tables */
 .data-table-wrapper {
     background: var(--bg-primary);
     border: 1px solid var(--border);
@@ -277,7 +277,7 @@
     background: var(--bg-secondary);
 }
 
-/* --- Status Badges --- */
+/* Status Badges */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -320,7 +320,7 @@
     color: var(--text-muted);
 }
 
-/* --- Action Buttons in Tables --- */
+/* Action Buttons in Tables */
 .table-actions {
     display: flex;
     gap: 6px;
@@ -332,7 +332,7 @@
     font-size: var(--font-size-xs);
 }
 
-/* --- Status Select --- */
+/* Status Select */
 .status-select {
     padding: 6px 10px;
     border: 1px solid var(--border);
@@ -349,7 +349,7 @@
     border-color: var(--border-focus);
 }
 
-/* --- Order Expansion Row --- */
+/* Order Expansion Row */
 .order-detail-row td {
     padding: 0 !important;
     background: var(--bg-secondary);
@@ -396,7 +396,7 @@
     font-size: var(--font-size-sm);
 }
 
-/* --- Admin Modals / Product Form --- */
+/* Admin Modals / Product Form */
 .admin-modal-overlay {
     position: fixed;
     inset: 0;
@@ -462,7 +462,7 @@
     display: block;
 }
 
-/* --- Admin Login Page --- */
+/* Admin Login Page */
 .admin-login-wrapper {
     display: flex;
     align-items: center;
@@ -493,7 +493,7 @@
     margin-bottom: var(--space-4);
 }
 
-/* --- Empty State --- */
+/* Empty State */
 .empty-state {
     text-align: center;
     padding: var(--space-6) var(--space-3);
@@ -511,7 +511,7 @@
     margin-bottom: var(--space-2);
 }
 
-/* --- Responsive Admin --- */
+/* Responsive Admin */
 @media (max-width: 768px) {
     .admin-sidebar {
         transform: translateX(-100%);

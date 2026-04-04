@@ -1,5 +1,4 @@
-import random
-import string
+import uuid
 from datetime import datetime, timezone, timedelta
 from flask import Flask, jsonify, request, render_template, abort
 from supabase import create_client, Client
@@ -388,7 +387,6 @@ def place_order():
         if discount_percentage > 0:
             total_amount = total_amount * (100 - discount_percentage) / 100.0
             
-        import uuid
         order_number = f"ORD-{str(uuid.uuid4())[:8].upper()}"
         
         order_data = {
