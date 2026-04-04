@@ -126,7 +126,7 @@
         if (targetTab) targetTab.style.display = 'block';
 
         // Update page title
-        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', coupons: 'Coupons', carts: 'Active Carts' };
+        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', coupons: 'Coupons' };
         document.getElementById('admin-page-title').textContent = titles[tab] || 'Dashboard';
 
         // Close mobile sidebar if open
@@ -142,7 +142,6 @@
         if (tab === 'products') loadProducts();
         if (tab === 'orders') loadOrders();
         if (tab === 'coupons') loadCoupons();
-        if (tab === 'carts') loadCarts();
 
         // Close mobile sidebar
         document.getElementById('admin-sidebar').classList.remove('open');
@@ -372,7 +371,11 @@
                         <strong>${escapeHtml(customerName)}</strong><br>
                         <small style="color:var(--text-muted);">${o.user_id ? o.user_id.substring(0, 8) + '…' : '—'}</small>
                     </td>
-                    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(o.shipping_address)}</td>
+                    <td style="font-size: 0.85rem;">
+                        ${o.contact_number ? `📞 ${escapeHtml(o.contact_number)}<br>` : ''}
+                        ${o.city ? `${escapeHtml(o.city)}, ${escapeHtml(o.district)}, ${escapeHtml(o.province)}<br>` : ''}
+                        ${escapeHtml(o.shipping_address)}
+                    </td>
                     <td>
                         <strong>Rs. ${parseFloat(o.total_amount).toFixed(2)}</strong><br>
                         <small style="color:var(--text-muted);">${o.payment_method || 'COD'}</small>
@@ -568,60 +571,3 @@
 
     let cartTimerIntervalAdmin = null;
 
-    async function loadCarts() {
-        const tbody = document.getElementById('admin-carts-list');
-        if (cartTimerIntervalAdmin) clearInterval(cartTimerIntervalAdmin);
-        try {
-            const carts = await adminApi('/api/admin/carts');
-            if (!carts || carts.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4">No active carts found.</td></tr>';
-                return;
-            }
-
-            let html = '';
-            carts.forEach(cart => {
-                const user = (cart.profiles && cart.profiles.full_name) ? cart.profiles.full_name : 'Unknown User';
-                const product = (cart.products && cart.products.title) ? cart.products.title : 'Unknown Product';
-                html += `
-                    <tr>
-                        <td>${escapeHtml(user)}</td>
-                        <td>
-                            ${cart.products && cart.products.image_url ? `<img src="${cart.products.image_url}" width="30" height="30" style="object-fit:cover; margin-right:8px; border-radius:4px;">` : ''}
-                            ${escapeHtml(product)}
-                        </td>
-                        <td>${cart.quantity}</td>
-                        <td class="admin-cart-timer" data-expires="${cart.expires_at || ''}">Loading...</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
-
-            function updateAdminTimers() {
-                document.querySelectorAll('.admin-cart-timer').forEach(timer => {
-                    const expiresAt = timer.getAttribute('data-expires');
-                    if (!expiresAt || expiresAt === 'null' || expiresAt === 'undefined') {
-                        timer.textContent = '-';
-                        return;
-                    }
-                    
-                    const now = new Date();
-                    const expiry = new Date(expiresAt.replace(/\+00:00$/, 'Z'));
-                    const diffMs = expiry - now;
-
-                    if (diffMs <= 0) {
-                        timer.textContent = 'Expired';
-                        timer.style.color = 'var(--error-color)';
-                    } else {
-                        const mins = Math.floor(diffMs / 60000);
-                        const secs = Math.floor((diffMs % 60000) / 1000);
-                        timer.textContent = `${mins}m ${secs}s`;
-                    }
-                });
-            }
-            updateAdminTimers();
-            cartTimerIntervalAdmin = setInterval(updateAdminTimers, 1000);
-
-        } catch (error) {
-            tbody.innerHTML = `<tr><td colspan="4">Error loading carts: ${error.message}</td></tr>`;
-        }
-    }

@@ -329,6 +329,107 @@ def remove_from_cart(cart_item_id):
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
+# ---------------------
+# Checkout API
+# ---------------------
+
+@app.route("/api/checkout/validate-coupon", methods=["POST"])
+def validate_coupon():
+    user = get_user_from_token(request)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    code = request.json.get("code")
+    if not code:
+        return jsonify({"error": "Missing coupon code"}), 400
+        
+    try:
+        res = supabase_admin.table("coupons").select("*").eq("code", code).eq("is_active", True).execute()
+        if not res.data:
+            return jsonify({"error": "Invalid or inactive coupon"}), 400
+        return jsonify(res.data[0]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/checkout", methods=["POST"])
+def place_order():
+    cleanup_expired_holds()
+    user = get_user_from_token(request)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    data = request.json or {}
+    shipping_address = data.get("shipping_address")
+    contact_number = data.get("contact_number")
+    province = data.get("province")
+    district = data.get("district")
+    city = data.get("city")
+    coupon_code = data.get("coupon_code")
+    
+    if not shipping_address:
+        return jsonify({"error": "Missing shipping address"}), 400
+        
+    try:
+        # Get cart
+        cart_res = supabase_admin.table("cart_items").select("*, products(*)").eq("user_id", user.id).execute()
+        if not cart_res.data:
+            return jsonify({"error": "Cart is empty"}), 400
+            
+        cart_items = cart_res.data
+        total_amount = sum([item['quantity'] * float(item['products']['price']) for item in cart_items])
+        
+        # apply discount
+        discount_percentage = 0
+        if coupon_code:
+            coupon_res = supabase_admin.table("coupons").select("*").eq("code", coupon_code).eq("is_active", True).execute()
+            if coupon_res.data:
+                discount_percentage = coupon_res.data[0]['discount_percentage']
+                
+        if discount_percentage > 0:
+            total_amount = total_amount * (100 - discount_percentage) / 100.0
+            
+        import uuid
+        order_number = f"ORD-{str(uuid.uuid4())[:8].upper()}"
+        
+        order_data = {
+            "user_id": user.id,
+            "total_amount": total_amount,
+            "order_number": order_number,
+            "shipping_address": shipping_address,
+            "contact_number": contact_number,
+            "province": province,
+            "district": district,
+            "city": city,
+            "payment_method": "cash_on_delivery"
+        }
+        
+        order_res = supabase_admin.table("orders").insert(order_data).execute()
+        if not order_res.data:
+            raise Exception("Failed to save order")
+            
+        order = order_res.data[0]
+        
+        # Save order items
+        order_items_data = []
+        for item in cart_items:
+            order_items_data.append({
+                "order_id": order['id'],
+                "product_id": item['product_id'],
+                "size": item.get('size'),
+                "quantity": item['quantity'],
+                "price_at_time": item['products']['price']
+            })
+            
+        supabase_admin.table("order_items").insert(order_items_data).execute()
+        
+        # Remove cart items
+        supabase_admin.table("cart_items").delete().eq("user_id", user.id).execute()
+        
+        return jsonify({"message": "Order placed successfully", "order_id": order_number}), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # ---------------------
 # Admin API — Protected & Role Restricted
@@ -427,19 +528,6 @@ def admin_delete_product(product_id):
         return jsonify({"message": "Product deleted"}), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
-
-
-@app.route("/api/admin/carts", methods=["GET"])
-def admin_get_carts():
-    cleanup_expired_holds()
-    user = get_user_from_token(request)
-    if not user or not is_admin(user.id):
-        return jsonify({"error": "Forbidden"}), 403
-    try:
-        res = supabase_admin.table("cart_items").select("*, profiles(full_name), products(title, image_url)").execute()
-        return jsonify(res.data), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/admin/orders", methods=["GET"])

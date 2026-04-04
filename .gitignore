@@ -5,3 +5,6 @@ migration.sql
 __pycache__/
 *.pyc
 cart_migration.sql
+OFFERING.md
+migration_checkout.sql
+routes.txt

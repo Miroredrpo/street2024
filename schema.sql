@@ -59,6 +59,10 @@ CREATE TABLE public.orders (
   status TEXT DEFAULT 'pending'::text, -- pending, shipped, delivered, cancelled
   payment_method TEXT DEFAULT 'cash_on_delivery'::text,
   shipping_address TEXT NOT NULL,
+  contact_number TEXT,
+  province TEXT,
+  district TEXT,
+  city TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

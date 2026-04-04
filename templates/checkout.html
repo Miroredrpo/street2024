@@ -101,8 +101,39 @@
     <div class="checkout-section">
         <h2 class="checkout-title">1. Shipping Details</h2>
         <div class="form-group">
-            <label for="shipping-address">Delivery Address</label>
-            <textarea id="shipping-address" rows="3" placeholder="Apartment, Street, City, Country" required></textarea>
+            <label for="contact-number">Contact Number</label>
+            <input type="tel" id="contact-number" placeholder="Enter valid phone number" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 1rem;">
+        </div>
+
+        <div class="form-group row" style="display: flex; gap: var(--space-4);">
+            <div style="flex: 1;">
+                <label for="province">Province</label>
+                <select id="province" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <option value="">Select Province</option>
+                    <option value="Koshi">Koshi</option>
+                    <option value="Madhesh">Madhesh</option>
+                    <option value="Bagmati">Bagmati</option>
+                    <option value="Gandaki">Gandaki</option>
+                    <option value="Lumbini">Lumbini</option>
+                    <option value="Karnali">Karnali</option>
+                    <option value="Sudurpashchim">Sudurpashchim</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label for="district">District</label>
+                <input type="text" id="district" placeholder="e.g. Kathmandu" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+            </div>
+        </div>
+
+        <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
+            <div style="flex: 1;">
+                <label for="city">City/Municipality</label>
+                <input type="text" id="city" placeholder="City or Local Level" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+            </div>
+            <div style="flex: 1;">
+                <label for="shipping-address">Street Name / Ward</label>
+                <input type="text" id="shipping-address" placeholder="e.g. New Road, Ward 22" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+            </div>
         </div>
         
         <div style="margin-top: 2rem;">
@@ -313,8 +344,13 @@
 
     async function processCheckout() {
         const address = document.getElementById('shipping-address').value.trim();
-        if (!address) {
-            alert('Please enter a shipping address');
+        const contactNumber = document.getElementById('contact-number').value.trim();
+        const province = document.getElementById('province').value;
+        const district = document.getElementById('district').value.trim();
+        const city = document.getElementById('city').value.trim();
+        
+        if (!address || !contactNumber || !province || !district || !city) {
+            alert('Please fill out all required shipping fields');
             return;
         }
 
@@ -325,7 +361,13 @@
         try {
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             
-            const payload = { shipping_address: address };
+            const payload = {
+                shipping_address: address,
+                contact_number: contactNumber,
+                province: province,
+                district: district,
+                city: city
+            };
             if (appliedCoupon) {
                 payload.coupon_code = appliedCoupon.code;
             }

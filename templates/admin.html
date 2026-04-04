@@ -50,9 +50,6 @@
                 <button class="admin-nav-item" data-tab="orders" onclick="switchAdminTab('orders')">
                     <span class="nav-icon">🧾</span> Orders
                 </button>
-                <button class="admin-nav-item" data-tab="carts" onclick="switchAdminTab('carts')">
-                    <span class="nav-icon">🛒</span> Active Carts
-                </button>
                 <button class="admin-nav-item" data-tab="coupons" onclick="switchAdminTab('coupons')">
                     <span class="nav-icon">🎟️</span> Coupons
                 </button>
@@ -177,30 +174,6 @@
                                 </thead>
                                 <tbody id="admin-order-list">
                                     <tr><td colspan="6" class="empty-state"><p>Loading orders...</p></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ===== CARTS TAB ===== -->
-                <section id="tab-carts" class="admin-tab" style="display:none;">
-                    <div class="data-table-wrapper">
-                        <div class="data-table-header">
-                            <h3>Active User Carts</h3>
-                        </div>
-                        <div class="data-table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>Product</th>
-                                        <th>Qty</th>
-                                        <th>Timer</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-carts-list">
-                                    <!-- Populated by JS -->
                                 </tbody>
                             </table>
                         </div>
