@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}{{ product.title }} — chrisalita_7{% endblock %}
+{% block title %}{{ product.title }} — Your store name{% endblock %}
 
 {% block head %}
-<meta name="description" content="{{ product.description[:160] if product.description else 'Shop ' + product.title + ' at chrisalita_7.' }}">
+<meta name="description" content="{{ product.description[:160] if product.description else 'Shop ' + product.title + ' at Your store name.' }}">
 {% endblock %}
 
 {% block content %}
