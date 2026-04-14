@@ -1,53 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Your store name {% endblock %}
+{% block title %}street2024customize {% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero" style="position: relative; overflow: hidden;">
+<section class="hero" style="position: relative; overflow: hidden; padding: 120px 20px; background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-primary) 100%);">
     <div class="hero-bg-shapes">
-        <!-- Handbag Outline -->
-        <svg class="doodle doodle-1" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect class="doodle-stroke" x="4" y="8" width="16" height="12" rx="2" ry="2" />
-            <path class="doodle-stroke" d="M8 8V6a4 4 0 018 0v2" />
-        </svg>
-        
-        <!-- Shirt Outline -->
-        <svg class="doodle doodle-2" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path class="doodle-stroke" d="M20.38 3.46 16 2a8.59 8.59 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.27 1.5l-1 5.5a2 2 0 0 0 1.92 2.38H5v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10h1.73a2 2 0 0 0 1.92-2.38l-1-5.5a2 2 0 0 0-1.27-1.55Z"/>
-        </svg>
-
-        <!-- Floral / Leaf Outline -->
-        <svg class="doodle doodle-3" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path class="doodle-stroke" d="M12 22v-9m0 0C7.5 13 4 9.5 4 5c3.5 0 8 2.5 8 8zm0 0c4.5 0 8-3.5 8-8-3.5 0-8 2.5-8 8z" />
-        </svg>
-        
-        <!-- Abstract Dots -->
-        <svg class="doodle doodle-4" width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="10" cy="10" r="3" class="doodle-fill" />
-            <circle cx="40" cy="10" r="3" class="doodle-fill-light" />
-            <circle cx="70" cy="10" r="3" class="doodle-fill" />
-            <circle cx="25" cy="40" r="3" class="doodle-fill-light" />
-            <circle cx="55" cy="40" r="3" class="doodle-fill" />
-            <circle cx="10" cy="70" r="3" class="doodle-fill-light" />
-            <circle cx="40" cy="70" r="3" class="doodle-fill" />
-            <circle cx="70" cy="70" r="3" class="doodle-fill-light" />
-        </svg>
-
-        <!-- Hanger Outline -->
-        <svg class="doodle doodle-5" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path class="doodle-stroke" d="M12 2.5a2.5 2.5 0 0 1 2.5 2.5c0 1.3-1.2 2.1-2.5 3.1V9l9 5.5a1 1 0 0 1-.5 1.5H3.5a1 1 0 0 1-.5-1.5L12 9" />
-        </svg>
-
-        <!-- Kurtha Outline -->
-        <svg class="doodle doodle-6" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path class="doodle-stroke" d="M7 3h10l3 5-2 2-1-2v12H7V8L6 10 4 8l3-5z" />
-            <path class="doodle-stroke" d="M10 3v4h4V3" />
+        <!-- Abstract Street Patterns -->
+        <svg class="doodle doodle-4" width="200" height="200" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.1; top: 0; right:-50px; transform: scale(3);">
+            <path stroke="currentColor" fill="none" stroke-width="0.5" d="M0 10 L80 10 M0 30 L80 30 M0 50 L80 50" />
+            <path stroke="currentColor" fill="none" stroke-width="0.5" d="M10 0 L10 80 M30 0 L30 80 M50 0 L50 80" />
         </svg>
     </div>
     <div class="container" style="position: relative; z-index: 1;">
-        <h1>Revolutionizing Fashion</h1>
-        <p>Exceptional quality products, delivered to your door. Cash on Delivery available.</p>
+        <h1 style="font-weight: 900; letter-spacing: -2px; text-transform: uppercase; font-size: clamp(3rem, 8vw, 6rem); margin-bottom: 20px; text-shadow: 2px 2px 0px var(--accent);">STREET2024<br/><span style="color: var(--accent);">CUSTOMIZE</span></h1>
+        <p style="font-size: 1.25rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; max-width: 600px;">Exclusive Streetwear Built For The Modern Era. Customize Your Vibe.</p>
     </div>
 </section>
 

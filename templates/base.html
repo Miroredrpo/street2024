@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your store name — Premium  clothing delivered to your door. Handcrafted garments with Cash on Delivery.">
-    <title>{% block title %}Your store name{% endblock %}</title>
+    <meta name="description" content="street2024customize — Premium  clothing delivered to your door. Handcrafted garments with Cash on Delivery.">
+    <title>{% block title %}street2024customize{% endblock %}</title>
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,9 +24,8 @@
     </script>
     <script>
         // Init dark mode before body renders to prevent flicker
-        if (localStorage.getItem('theme') === 'dark' ) {
+        if (localStorage.getItem('theme') !== 'light') {
             document.documentElement.classList.add('dark-mode');
-            // document.body might not be ready, so we toggle an observer or just apply to documentElement
         }
     </script>
     {% block head %}{% endblock %}
@@ -37,7 +36,7 @@
     <header class="navbar">
         <div class="logo">
             <a href="/">
-                <h2>Your store name</h2>
+                <h2>street2024customize</h2>
             </a>
         </div>
         <nav class="nav-actions">
@@ -70,7 +69,7 @@
     <!-- ========== FOOTER ========== -->
     <footer class="site-footer">
         <div class="container">
-            <p>&copy; 2026 Your store name. Made by EComm Labs.</p>
+            <p>&copy; 2026 street2024customize. Made by EComm Labs.</p>
         </div>
     </footer>
 
