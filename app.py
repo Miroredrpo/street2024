@@ -4,8 +4,17 @@ from flask import Flask, jsonify, request, render_template, abort
 from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
 
 load_dotenv()
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 24 hours
@@ -78,6 +87,10 @@ def is_admin(user_id):
 # ---------------------
 # Storefront Routes
 # ---------------------
+
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
 
 @app.route("/orders")
 def orders_page():
@@ -364,9 +377,19 @@ def place_order():
     district = data.get("district")
     city = data.get("city")
     coupon_code = data.get("coupon_code")
+    payment_method = data.get("payment_method", "cash_on_delivery")
+    payment_receipt_url = data.get("payment_receipt_url")
+    alternate_contact_number = data.get("alternate_contact_number")
+    custom_message = data.get("custom_message")
     
     if not shipping_address:
         return jsonify({"error": "Missing shipping address"}), 400
+        
+    if not contact_number or not contact_number.isdigit() or len(contact_number) != 10:
+        return jsonify({"error": "Please input a valid 10-digit phone number"}), 400
+        
+    if alternate_contact_number and (not alternate_contact_number.isdigit() or len(alternate_contact_number) != 10):
+        return jsonify({"error": "Please input a valid 10-digit alternate phone number"}), 400
         
     try:
         # Get cart
@@ -395,10 +418,13 @@ def place_order():
             "order_number": order_number,
             "shipping_address": shipping_address,
             "contact_number": contact_number,
+            "alternate_contact_number": alternate_contact_number,
+            "custom_message": custom_message,
             "province": province,
             "district": district,
             "city": city,
-            "payment_method": "cash_on_delivery"
+            "payment_method": payment_method,
+            "payment_receipt_url": payment_receipt_url
         }
         
         order_res = supabase_admin.table("orders").insert(order_data).execute()
@@ -428,6 +454,39 @@ def place_order():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/orders", methods=["GET"])
+def get_user_orders():
+    user = get_user_from_token(request)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        # Fetch the user's orders and include order_items & their products
+        res = supabase_admin.table("orders").select("*, order_items(*, products(*))").eq("user_id", user.id).order('created_at', desc=True).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred while loading orders: {str(e)}"}), 500
+
+@app.route("/api/orders/<order_id>/cancel", methods=["POST"])
+def cancel_user_order(order_id):
+    user = get_user_from_token(request)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        # Verify the order belongs to the user
+        order_res = supabase_admin.table("orders").select("*").eq("id", order_id).eq("user_id", user.id).execute()
+        if not order_res.data:
+            return jsonify({"error": "Order not found"}), 404
+        
+        order = order_res.data[0]
+        if order["status"] != "pending":
+            return jsonify({"error": "Only pending orders can be cancelled"}), 400
+            
+        update_res = supabase_admin.table("orders").update({"status": "cancelled"}).eq("id", order_id).execute()
+        return jsonify(update_res.data[0]), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred while cancelling order: {str(e)}"}), 500
 
 # ---------------------
 # Admin API — Protected & Role Restricted
@@ -636,6 +695,26 @@ def admin_delete_coupon(coupon_id):
 @app.route("/reset-password")
 def reset_password_page():
     return render_template("reset_password.html")
+
+@app.route("/api/upload", methods=["POST"])
+def upload_image():
+    user = get_user_from_token(request)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    try:
+        upload_result = cloudinary.uploader.upload(file)
+        return jsonify({"url": upload_result.get("secure_url")}), 200
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return jsonify({"error": "Failed to upload image"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

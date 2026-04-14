@@ -58,8 +58,11 @@ CREATE TABLE public.orders (
   order_number TEXT UNIQUE,
   status TEXT DEFAULT 'pending'::text, -- pending, shipped, delivered, cancelled
   payment_method TEXT DEFAULT 'cash_on_delivery'::text,
+  payment_receipt_url TEXT,
   shipping_address TEXT NOT NULL,
   contact_number TEXT,
+  alternate_contact_number TEXT,
+  custom_message TEXT,
   province TEXT,
   district TEXT,
   city TEXT,

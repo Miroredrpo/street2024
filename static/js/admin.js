@@ -217,6 +217,20 @@
         document.getElementById('prod-id').value = '';
         document.getElementById('product-modal-title').textContent = 'Add Product';
         document.getElementById('prod-active').value = 'true';
+        
+        const fileInput = document.getElementById('prod-image');
+        fileInput.value = '';
+        fileInput.dataset.existingUrl = '';
+
+        const otherFileInput = document.getElementById('prod-images');
+        if (otherFileInput) {
+            otherFileInput.value = '';
+            const existingEl = document.getElementById('prod-existing-images');
+            if (existingEl) {
+                existingEl.dataset.urls = JSON.stringify([]);
+                existingEl.textContent = '';
+            }
+        }
 
         // Clear image preview
         const preview = document.getElementById('prod-image-preview');
@@ -237,8 +251,24 @@
         document.getElementById('prod-title').value = product.title;
         document.getElementById('prod-desc').value = product.description || '';
         document.getElementById('prod-price').value = product.price;
-        document.getElementById('prod-image').value = product.image_url || '';
-        document.getElementById('prod-images').value = (product.images || []).join(', ');
+        
+        const fileInput = document.getElementById('prod-image');
+        fileInput.value = ''; 
+        fileInput.dataset.existingUrl = product.image_url || '';
+
+        const otherFileInput = document.getElementById('prod-images');
+        if (otherFileInput) {
+            otherFileInput.value = '';
+            const existingOtherImages = product.images || [];
+            const existingEl = document.getElementById('prod-existing-images');
+            if (existingEl) {
+                existingEl.dataset.urls = JSON.stringify(existingOtherImages);
+                existingEl.textContent = existingOtherImages.length 
+                    ? `Currently ${existingOtherImages.length} image(s) set. Leave empty to keep them, or select new files to overwrite.` 
+                    : 'No additional images currently.';
+            }
+        }
+
         document.getElementById('prod-sizes').value = (product.sizes || []).join(', ');
         document.getElementById('prod-stock').value = product.stock || 0;
         document.getElementById('prod-active').value = product.is_active !== false ? 'true' : 'false';
@@ -253,6 +283,16 @@
         document.getElementById('product-modal').classList.add('active');
         document.getElementById('product-modal-overlay').classList.add('active');
     };
+
+    window.previewFile = function (input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewProductImage(e.target.result);
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 
     window.previewProductImage = function (url) {
         const preview = document.getElementById('prod-image-preview');
@@ -274,15 +314,72 @@
         btn.disabled = true;
 
         const id = document.getElementById('prod-id').value;
-        const imagesStr = document.getElementById('prod-images').value;
+        const otherFileInput = document.getElementById('prod-images');
         const sizesStr = document.getElementById('prod-sizes').value;
         
+        let finalImageUrl = document.getElementById('prod-image').dataset.existingUrl || '';
+        const fileInput = document.getElementById('prod-image');
+        
+        // Upload new file if selected
+        if (fileInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                finalImageUrl = uploadData.url;
+            } catch (err) {
+                showToast(`Image upload error: ${err.message}`, 'error');
+                btn.textContent = originalText;
+                btn.disabled = false;
+                return;
+            }
+        }
+
+        let finalOtherImages = [];
+        const existingEl = document.getElementById('prod-existing-images');
+        if (existingEl && existingEl.dataset.urls) {
+            try { finalOtherImages = JSON.parse(existingEl.dataset.urls); } catch(e) { finalOtherImages = []; }
+        }
+
+        if (otherFileInput && otherFileInput.files.length > 0) {
+            finalOtherImages = []; // Overwrite existing if user selects new files
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            
+            for (let i = 0; i < otherFileInput.files.length; i++) {
+                const formData = new FormData();
+                formData.append('file', otherFileInput.files[i]);
+                try {
+                    const uploadRes = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${session.access_token}` },
+                        body: formData
+                    });
+                    const uploadData = await uploadRes.json();
+                    if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                    finalOtherImages.push(uploadData.url);
+                } catch (err) {
+                    showToast(`Other image upload error: ${err.message}`, 'error');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+            }
+        }
+
         const data = {
             title: document.getElementById('prod-title').value,
             description: document.getElementById('prod-desc').value,
             price: parseFloat(document.getElementById('prod-price').value),
-            image_url: document.getElementById('prod-image').value,
-            images: imagesStr ? imagesStr.split(',').map(s => s.trim()).filter(Boolean) : [],
+            image_url: finalImageUrl,
+            images: finalOtherImages,
             sizes: sizesStr ? sizesStr.split(',').map(s => s.trim()).filter(Boolean) : [],
             stock: parseInt(document.getElementById('prod-stock').value, 10),
             is_active: document.getElementById('prod-active').value === 'true'

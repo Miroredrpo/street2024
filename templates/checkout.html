@@ -100,9 +100,15 @@
     <!-- Left Col: Form -->
     <div class="checkout-section">
         <h2 class="checkout-title">1. Shipping Details</h2>
-        <div class="form-group">
-            <label for="contact-number">Contact Number</label>
-            <input type="tel" id="contact-number" placeholder="Enter valid phone number" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 1rem;">
+        <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
+            <div style="flex: 1;">
+                <label for="contact-number">Contact Number *</label>
+                <input type="tel" id="contact-number" placeholder="Enter 10-digit number" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+            </div>
+            <div style="flex: 1;">
+                <label for="alt-contact-number">Alternate Number (Optional)</label>
+                <input type="tel" id="alt-contact-number" placeholder="Optional 10-digit number" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+            </div>
         </div>
 
         <div class="form-group row" style="display: flex; gap: var(--space-4);">
@@ -135,10 +141,63 @@
                 <input type="text" id="shipping-address" placeholder="e.g. New Road, Ward 22" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
             </div>
         </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+            <label for="custom-message">Custom Message (Optional)</label>
+            <textarea id="custom-message" placeholder="Notes about your order, e.g., special notes for delivery, packaging..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>
+        </div>
         
         <div style="margin-top: 2rem;">
-            <p><strong>Payment Method:</strong> Cash on Delivery (COD)</p>
+            <h3>Payment Method</h3>
+            <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
+                <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="radio" name="payment_method" value="cash_on_delivery" checked onchange="togglePayment()"> Cash on Delivery (COD)
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="radio" name="payment_method" value="online" onchange="togglePayment()"> Online Banking
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="radio" name="payment_method" value="esewa" onchange="togglePayment()"> eSewa
+                </label>
+            </div>
+            
+            <div id="online-payment-details" style="display: none; padding: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface);">
+                <p style="margin-bottom: 1rem; text-align: center;">
+                    <img id="qr-code-img" src="https://via.placeholder.com/150?text=Online+Banking" alt="Scan to Pay" style="border-radius: 8px; box-shadow: var(--shadow-sm);">
+                </p>
+                <p style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Please scan the QR code to pay, then upload your receipt below to confirm.</p>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="payment-receipt" style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Upload Payment Receipt *</label>
+                    <input type="file" id="payment-receipt" accept="image/*" style="width: 100%; border: 1px solid var(--border); padding: 0.5rem; border-radius: 4px;">
+                </div>
+            </div>
         </div>
+
+        <script>
+        function togglePayment() {
+            const method = document.querySelector('input[name="payment_method"]:checked').value;
+            const isOnlineOrEsewa = method === 'online' || method === 'esewa';
+            const detailsDiv = document.getElementById('online-payment-details');
+            const qrImg = document.getElementById('qr-code-img');
+            
+            detailsDiv.style.display = isOnlineOrEsewa ? 'block' : 'none';
+            document.getElementById('payment-receipt').required = isOnlineOrEsewa;
+
+            if (isOnlineOrEsewa) {
+                if (window.showToast) {
+                    window.showToast("Please pay the checkout price to the QR code, or the item may not be delivered.", "info");
+                } else {
+                    alert("Please pay the checkout price to the QR code, or the item may not be delivered.");
+                }
+            }
+
+            if (method === 'esewa') {
+                qrImg.src = "https://via.placeholder.com/150/4CAF50/FFFFFF?text=eSewa+QR";
+            } else if (method === 'online') {
+                qrImg.src = "https://via.placeholder.com/150/2196F3/FFFFFF?text=Bank+QR";
+            }
+        }
+        </script>
         
         <button id="place-order-btn" class="btn btn-primary" style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1.1rem;" onclick="processCheckout()">
             Place Order
@@ -345,6 +404,8 @@
     async function processCheckout() {
         const address = document.getElementById('shipping-address').value.trim();
         const contactNumber = document.getElementById('contact-number').value.trim();
+        const altContactNumber = document.getElementById('alt-contact-number') ? document.getElementById('alt-contact-number').value.trim() : '';
+        const customMessage = document.getElementById('custom-message') ? document.getElementById('custom-message').value.trim() : '';
         const province = document.getElementById('province').value;
         const district = document.getElementById('district').value.trim();
         const city = document.getElementById('city').value.trim();
@@ -354,19 +415,68 @@
             return;
         }
 
+        if (!/^\d{10}$/.test(contactNumber)) {
+            alert('Please input a valid 10-digit phone number');
+            return;
+        }
+
+        if (altContactNumber && !/^\d{10}$/.test(altContactNumber)) {
+            alert('Please input a valid 10-digit alternate phone number or leave it blank');
+            return;
+        }
+
         const btn = document.getElementById('place-order-btn');
         btn.disabled = true;
         btn.textContent = 'Processing...';
 
         try {
             const { data: { session } } = await window.supabaseClient.auth.getSession();
+            let paymentReceiptUrl = null;
+            const paymentMethodStr = document.querySelector('input[name="payment_method"]:checked').value;
+            
+            if (paymentMethodStr === 'online' || paymentMethodStr === 'esewa') {
+                const fileInput = document.getElementById('payment-receipt');
+                if (!fileInput.files.length) {
+                    alert("Please upload your payment receipt before submitting.");
+                    return;
+                }
+                
+                btn.textContent = 'Uploading Receipt...';
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                try {
+                    const uploadRes = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: formData
+                    });
+                    
+                    const uploadData = await uploadRes.json();
+                    if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                    paymentReceiptUrl = uploadData.url;
+                } catch (up_err) {
+                    alert('Error uploading receipt: ' + up_err.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Place Order';
+                    return;
+                }
+            }
+            
+            btn.textContent = 'Processing...';
             
             const payload = {
                 shipping_address: address,
                 contact_number: contactNumber,
+                alternate_contact_number: altContactNumber,
+                custom_message: customMessage,
                 province: province,
                 district: district,
-                city: city
+                city: city,
+                payment_method: paymentMethodStr,
+                payment_receipt_url: paymentReceiptUrl
             };
             if (appliedCoupon) {
                 payload.coupon_code = appliedCoupon.code;
