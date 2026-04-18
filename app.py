@@ -84,6 +84,16 @@ def is_admin(user_id):
         return False
 
 
+def normalize_instagram(username):
+    if not username:
+        return ""
+    cleaned = username.strip()
+    if cleaned.startswith("@"):
+        cleaned = cleaned[1:]
+    cleaned = cleaned.replace("@", "")
+    return cleaned.strip()
+
+
 # ---------------------
 # Storefront Routes
 # ---------------------
@@ -184,6 +194,15 @@ def get_product(product_id):
         response = jsonify(res.data[0])
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         return response, 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/catalogs", methods=["GET"])
+def get_catalogs():
+    try:
+        res = supabase_admin.table("catalogs").select("*").order("name", desc=False).execute()
+        return jsonify(res.data), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
@@ -371,19 +390,42 @@ def place_order():
         return jsonify({"error": "Unauthorized"}), 401
         
     data = request.json or {}
+    full_name = data.get("full_name")
+    email = data.get("email")
+    instagram_username = normalize_instagram(data.get("instagram_username", ""))
+    country = data.get("country")
+    state = data.get("state")
+    zipcode = data.get("zipcode")
     shipping_address = data.get("shipping_address")
     contact_number = data.get("contact_number")
     province = data.get("province")
     district = data.get("district")
-    city = data.get("city")
     coupon_code = data.get("coupon_code")
     payment_method = data.get("payment_method", "cash_on_delivery")
     payment_receipt_url = data.get("payment_receipt_url")
     alternate_contact_number = data.get("alternate_contact_number")
     custom_message = data.get("custom_message")
+
+    if not full_name:
+        return jsonify({"error": "Full name is required"}), 400
+
+    if email and "@" not in email:
+        return jsonify({"error": "Please provide a valid email address"}), 400
+
+    if not instagram_username:
+        return jsonify({"error": "Instagram username is required"}), 400
+
+    if not country:
+        return jsonify({"error": "Country is required"}), 400
     
     if not shipping_address:
         return jsonify({"error": "Missing shipping address"}), 400
+
+    if country == "Nepal" and (not province or not district):
+        return jsonify({"error": "Province and district are required for Nepal"}), 400
+
+    if country == "India" and (not state or not zipcode):
+        return jsonify({"error": "State and zip code are required for India"}), 400
         
     if not contact_number or not contact_number.isdigit() or len(contact_number) != 10:
         return jsonify({"error": "Please input a valid 10-digit phone number"}), 400
@@ -414,6 +456,12 @@ def place_order():
         
         order_data = {
             "session_id": session_id,
+            "full_name": full_name,
+            "email": email,
+            "instagram_username": instagram_username,
+            "country": country,
+            "state": state,
+            "zipcode": zipcode,
             "total_amount": total_amount,
             "order_number": order_number,
             "shipping_address": shipping_address,
@@ -422,7 +470,6 @@ def place_order():
             "custom_message": custom_message,
             "province": province,
             "district": district,
-            "city": city,
             "payment_method": payment_method,
             "payment_receipt_url": payment_receipt_url
         }
@@ -463,6 +510,22 @@ def get_user_orders():
     try:
         # Fetch the user's orders and include order_items & their products
         res = supabase_admin.table("orders").select("*, order_items(*, products(*))").eq("session_id", session_id).order('created_at', desc=True).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred while loading orders: {str(e)}"}), 500
+
+
+@app.route("/api/orders/lookup", methods=["POST"])
+def lookup_orders_by_instagram():
+    data = request.json or {}
+    instagram_username = normalize_instagram(data.get("instagram_username", ""))
+    if not instagram_username:
+        return jsonify({"error": "Instagram username is required"}), 400
+
+    try:
+        res = supabase_admin.table("orders").select("*, order_items(*, products(*))") \
+            .eq("instagram_username", instagram_username) \
+            .order('created_at', desc=True).execute()
         return jsonify(res.data), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred while loading orders: {str(e)}"}), 500
@@ -647,6 +710,83 @@ def admin_get_order_items(order_id):
     try:
         res = supabase_admin.table("order_items").select("*, products(title, image_url)").eq("order_id", order_id).execute()
         return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/orders/<order_id>/detail", methods=["GET"])
+def admin_get_order_detail(order_id):
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        res = supabase_admin.table("orders").select("*, order_items(*, products(*))") \
+            .eq("id", order_id).single().execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/catalogs", methods=["GET"])
+def admin_get_catalogs():
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        res = supabase_admin.table("catalogs").select("*").order("name", desc=False).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/catalogs", methods=["POST"])
+def admin_create_catalog():
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.json or {}
+    if not data.get("name"):
+        return jsonify({"error": "Catalog name is required"}), 400
+
+    try:
+        res = supabase_admin.table("catalogs").insert({
+            "name": data.get("name"),
+            "description": data.get("description")
+        }).execute()
+        return jsonify(res.data[0]), 201
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/catalogs/<catalog_id>", methods=["PUT"])
+def admin_update_catalog(catalog_id):
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.json or {}
+    try:
+        res = supabase_admin.table("catalogs").update({
+            "name": data.get("name"),
+            "description": data.get("description")
+        }).eq("id", catalog_id).execute()
+        return jsonify(res.data[0]), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/catalogs/<catalog_id>", methods=["DELETE"])
+def admin_delete_catalog(catalog_id):
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        supabase_admin.table("catalogs").delete().eq("id", catalog_id).execute()
+        return jsonify({"message": "Catalog deleted"}), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 

@@ -4,9 +4,13 @@
 
 {% block content %}
 <div class="orders-container" style="max-width: 800px; margin: 0 auto; padding: var(--space-4);">
-    <h2 style="margin-bottom: var(--space-4);">My Orders</h2>
+    <h2 style="margin-bottom: var(--space-4);">Order Tracking</h2>
+    <div style="display:flex; gap: var(--space-2); margin-bottom: var(--space-4);">
+        <input type="text" id="instagram-search" placeholder="Enter your Instagram username" style="flex:1; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <button class="btn btn-primary" onclick="loadOrdersByInstagram()">Track</button>
+    </div>
     <div id="orders-list">
-        <p>Loading orders...</p>
+        <p>Enter your Instagram username to view your orders.</p>
     </div>
 </div>
 
@@ -66,28 +70,29 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', loadMyOrders);
-
-async function loadMyOrders() {
+async function loadOrdersByInstagram() {
     const list = document.getElementById('orders-list');
-    try {
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
-        if (!session) {
-            window.location.href = '/login';
-            return;
-        }
+    const input = document.getElementById('instagram-search');
+    const raw = input.value.trim();
+    const username = raw.replace(/@/g, '');
 
-        const res = await fetch('/api/orders', {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
+    if (!username) {
+        list.innerHTML = '<p>Please enter your Instagram username.</p>';
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/orders/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ instagram_username: username })
         });
 
-        if (!res.ok) throw new Error('Failed to load orders');
         const orders = await res.json();
+        if (!res.ok) throw new Error(orders.error || 'Failed to load orders');
 
-        if (orders.length === 0) {
-            list.innerHTML = '<p>You have no orders yet.</p><a href="/" class="btn btn-primary" style="display:inline-block;margin-top:10px;">Start Shopping</a>';
+        if (!orders || orders.length === 0) {
+            list.innerHTML = '<p>No orders found for that Instagram username.</p>';
             return;
         }
 

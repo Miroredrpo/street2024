@@ -50,9 +50,12 @@
                 {% if product.stock > 10 %}
                     <span class="dot in-stock"></span>
                     <span>In Stock</span>
-                {% elif product.stock > 0 %}
+                {% elif product.stock > 0 and product.show_low_stock_label %}
                     <span class="dot low-stock"></span>
                     <span>Only {{ product.stock }} left</span>
+                {% elif product.stock > 0 %}
+                    <span class="dot in-stock"></span>
+                    <span>In Stock</span>
                 {% else %}
                     <span class="dot out-of-stock"></span>
                     <span>Out of Stock</span>

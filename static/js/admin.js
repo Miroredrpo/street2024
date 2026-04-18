@@ -6,6 +6,7 @@
 (() => {
     const sb = window.supabaseClient;
     let adminUser = null;
+    let catalogsCache = [];
 
     // DOM
     const loginWrapper = document.getElementById('admin-login');
@@ -126,7 +127,7 @@
         if (targetTab) targetTab.style.display = 'block';
 
         // Update page title
-        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', coupons: 'Coupons' };
+        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', catalogs: 'Catalogs', coupons: 'Coupons' };
         document.getElementById('admin-page-title').textContent = titles[tab] || 'Dashboard';
 
         // Close mobile sidebar if open
@@ -142,6 +143,7 @@
         if (tab === 'products') loadProducts();
         if (tab === 'orders') loadOrders();
         if (tab === 'coupons') loadCoupons();
+        if (tab === 'catalogs') loadCatalogs();
 
         // Close mobile sidebar
         document.getElementById('admin-sidebar').classList.remove('open');
@@ -217,6 +219,8 @@
         document.getElementById('prod-id').value = '';
         document.getElementById('product-modal-title').textContent = 'Add Product';
         document.getElementById('prod-active').value = 'true';
+        document.getElementById('prod-catalog').value = '';
+        document.getElementById('prod-show-low-stock').checked = false;
         
         const fileInput = document.getElementById('prod-image');
         fileInput.value = '';
@@ -236,6 +240,9 @@
         const preview = document.getElementById('prod-image-preview');
         preview.classList.remove('has-image');
 
+        loadCatalogs();
+        refreshCatalogOptions();
+
         document.getElementById('product-modal').classList.add('active');
         document.getElementById('product-modal-overlay').classList.add('active');
         document.getElementById('prod-title')?.focus();
@@ -251,6 +258,7 @@
         document.getElementById('prod-title').value = product.title;
         document.getElementById('prod-desc').value = product.description || '';
         document.getElementById('prod-price').value = product.price;
+        document.getElementById('prod-price-inr').value = product.price_inr || 0;
         
         const fileInput = document.getElementById('prod-image');
         fileInput.value = ''; 
@@ -272,8 +280,12 @@
         document.getElementById('prod-sizes').value = (product.sizes || []).join(', ');
         document.getElementById('prod-stock').value = product.stock || 0;
         document.getElementById('prod-active').value = product.is_active !== false ? 'true' : 'false';
+        document.getElementById('prod-catalog').value = product.catalog_id || '';
+        document.getElementById('prod-show-low-stock').checked = product.show_low_stock_label === true;
 
         document.getElementById('product-modal-title').textContent = 'Edit Product';
+        loadCatalogs();
+        refreshCatalogOptions();
 
         // Show image preview if URL exists
         if (product.image_url) {
@@ -378,11 +390,14 @@
             title: document.getElementById('prod-title').value,
             description: document.getElementById('prod-desc').value,
             price: parseFloat(document.getElementById('prod-price').value),
+            price_inr: parseFloat(document.getElementById('prod-price-inr').value),
+            show_low_stock_label: document.getElementById('prod-show-low-stock').checked,
             image_url: finalImageUrl,
             images: finalOtherImages,
             sizes: sizesStr ? sizesStr.split(',').map(s => s.trim()).filter(Boolean) : [],
             stock: parseInt(document.getElementById('prod-stock').value, 10),
-            is_active: document.getElementById('prod-active').value === 'true'
+            is_active: document.getElementById('prod-active').value === 'true',
+            catalog_id: document.getElementById('prod-catalog').value || null
         };
 
         try {
@@ -443,9 +458,8 @@
         let filtered = allOrders;
         if (searchTerm) {
             filtered = allOrders.filter(o => {
-                const orderNum = (o.order_number || '').toLowerCase();
-                const oId = (o.id || '').toLowerCase();
-                return orderNum.includes(searchTerm) || oId.includes(searchTerm);
+                const ig = (o.instagram_username || '').toLowerCase();
+                return ig.includes(searchTerm);
             });
         }
         
@@ -457,20 +471,21 @@
             }
 
             filtered.forEach(o => {
-                const customerName = o.profiles?.full_name || 'Customer';
+                const customerName = o.full_name || 'Customer';
+                const instagram = o.instagram_username ? `@${o.instagram_username}` : '—';
 
                 const tr = document.createElement('tr');
-                tr.style.cursor = 'pointer';
-                tr.onclick = () => toggleOrderDetail(o.id, tr);
                 tr.innerHTML = `
                     <td style="font-family:monospace;font-size:var(--font-size-xs);">${o.order_number || o.id.substring(0, 4)}</td>
                     <td>
                         <strong>${escapeHtml(customerName)}</strong><br>
-                        <small style="color:var(--text-muted);">${o.user_id ? o.user_id.substring(0, 8) + '…' : '—'}</small>
+                        <small style="color:var(--text-muted);">${escapeHtml(instagram)}</small>
                     </td>
                     <td style="font-size: 0.85rem;">
                         ${o.contact_number ? `📞 ${escapeHtml(o.contact_number)}<br>` : ''}
-                        ${o.city ? `${escapeHtml(o.city)}, ${escapeHtml(o.district)}, ${escapeHtml(o.province)}<br>` : ''}
+                        ${o.country ? `${escapeHtml(o.country)}<br>` : ''}
+                        ${o.country === 'Nepal' ? `${escapeHtml(o.district || '')}, ${escapeHtml(o.province || '')}<br>` : ''}
+                        ${o.country === 'India' ? `${escapeHtml(o.state || '')} ${escapeHtml(o.zipcode || '')}<br>` : ''}
                         ${escapeHtml(o.shipping_address)}
                     </td>
                     <td>
@@ -479,69 +494,97 @@
                     </td>
                     <td><span class="status-badge ${o.status}">${o.status}</span></td>
                     <td onclick="event.stopPropagation();">
-                        <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
+                        <div style="display:flex; flex-direction: column; gap: 6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="openOrderDetail('${o.id}')">View Details</button>
+                            <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
                             <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
                             <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>Processing</option>
                             <option value="packed" ${o.status === 'packed' ? 'selected' : ' '}>Packed</option>
                                     <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Shipped</option>
                             <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered</option>
                             <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                        </select>
+                            </select>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
-
-                // Detail row (hidden by default)
-                const detailTr = document.createElement('tr');
-                detailTr.className = 'order-detail-row';
-                detailTr.id = `order-detail-${o.id}`;
-                detailTr.innerHTML = `<td colspan="6"><div class="order-detail-content" id="order-items-${o.id}">Loading items...</div></td>`;
-                tbody.appendChild(detailTr);
             });
     }
 
-    async function toggleOrderDetail(orderId, row) {
-        const content = document.getElementById(`order-items-${orderId}`);
-        if (!content) return;
+    window.openOrderDetail = async function (orderId) {
+        const modal = document.getElementById('order-detail-modal');
+        const overlay = document.getElementById('order-detail-overlay');
+        const body = document.getElementById('order-detail-body');
+        if (!modal || !overlay || !body) return;
 
-        if (content.classList.contains('open')) {
-            content.classList.remove('open');
-            return;
-        }
-
-        content.classList.add('open');
-        content.innerHTML = 'Loading items...';
+        modal.classList.add('active');
+        overlay.classList.add('active');
+        body.innerHTML = '<p>Loading...</p>';
 
         try {
-            const items = await adminApi(`/api/admin/orders/${orderId}/items`);
-
-            if (!items || items.length === 0) {
-                content.innerHTML = '<p style="color:var(--text-muted);font-size:var(--font-size-sm);">No items found for this order.</p>';
-                return;
-            }
-
-            let html = '<div class="order-items-list">';
-            items.forEach(item => {
-                const productTitle = item.products?.title || 'Unknown Product';
-                const productImg = item.products?.image_url || '/static/fallback.svg';
-                html += `
-                    <div class="order-item-row">
-                        <img src="${productImg}" alt="" onerror="this.onerror=null;this.src='/static/fallback.svg';">
-                        <div class="order-item-info">
-                            <strong>${escapeHtml(productTitle)}</strong>
-                            ${item.size ? `<span style="font-size: 0.8rem; color: #555; margin-left: 8px;">Size: ${escapeHtml(item.size)}</span>` : ''}
-                            <span style="color:var(--text-muted);"> × ${item.quantity}</span>
+            const order = await adminApi(`/api/admin/orders/${orderId}/detail`);
+            const items = order.order_items || [];
+            const itemRows = items.map(item => {
+                const product = item.products || {};
+                return `
+                    <div style="display:flex; align-items:center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                        <img src="${product.image_url || '/static/fallback.svg'}" alt="" style="width:48px;height:48px;border-radius:6px;object-fit:cover;" onerror="this.onerror=null;this.src='/static/fallback.svg';">
+                        <div style="flex:1;">
+                            <div style="font-weight: 600;">${escapeHtml(product.title || 'Product')}</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Qty: ${item.quantity}${item.size ? ` | Size: ${escapeHtml(item.size)}` : ''}</div>
                         </div>
-                        <span class="order-item-price">Rs. ${parseFloat(item.price_at_time).toFixed(2)}</span>
+                        <div style="font-weight: 600;">Rs. ${parseFloat(item.price_at_time).toFixed(2)}</div>
                     </div>
                 `;
-            });
-            html += '</div>';
-            content.innerHTML = html;
+            }).join('');
+
+            body.innerHTML = `
+                <div style="display:grid; gap: 12px;">
+                    <div>
+                        <strong>Order #</strong> ${order.order_number || order.id}
+                        <div style="color: var(--text-muted); font-size: var(--font-size-sm);">Placed on ${new Date(order.created_at).toLocaleString()}</div>
+                    </div>
+                    <div style="display:grid; gap: 6px;">
+                        <div><strong>Customer:</strong> ${escapeHtml(order.full_name || 'Customer')}</div>
+                        <div><strong>Email:</strong> ${escapeHtml(order.email || '—')}</div>
+                        <div><strong>Instagram:</strong> ${order.instagram_username ? '@' + escapeHtml(order.instagram_username) : '—'}</div>
+                        <div><strong>Contact:</strong> ${escapeHtml(order.contact_number || '—')}</div>
+                        ${order.alternate_contact_number ? `<div><strong>Alternate:</strong> ${escapeHtml(order.alternate_contact_number)}</div>` : ''}
+                    </div>
+                    <div>
+                        <strong>Delivery Address:</strong>
+                        <div style="color: var(--text-muted); font-size: var(--font-size-sm);">${escapeHtml(order.shipping_address || '—')}</div>
+                        ${order.country ? `<div style="color: var(--text-muted); font-size: var(--font-size-sm);">${escapeHtml(order.country)}</div>` : ''}
+                        ${order.country === 'Nepal' ? `<div style="color: var(--text-muted); font-size: var(--font-size-sm);">${escapeHtml(order.district || '')}, ${escapeHtml(order.province || '')}</div>` : ''}
+                        ${order.country === 'India' ? `<div style="color: var(--text-muted); font-size: var(--font-size-sm);">${escapeHtml(order.state || '')} ${escapeHtml(order.zipcode || '')}</div>` : ''}
+                    </div>
+                    <div>
+                        <strong>Payment:</strong> ${escapeHtml(order.payment_method || 'COD')}
+                        ${order.payment_receipt_url ? `<div><a href="${order.payment_receipt_url}" target="_blank" rel="noopener">View receipt</a></div>` : ''}
+                    </div>
+                    <div>
+                        <strong>Status:</strong> ${escapeHtml(order.status || 'pending')}
+                    </div>
+                    <div>
+                        <strong>Items</strong>
+                        <div style="margin-top: 6px;">${itemRows || '<p>No items</p>'}</div>
+                    </div>
+                    <div style="text-align:right; font-weight: 700;">
+                        Total: Rs. ${parseFloat(order.total_amount).toFixed(2)}
+                    </div>
+                </div>
+            `;
         } catch (err) {
-            content.innerHTML = `<p style="color:var(--error);font-size:var(--font-size-sm);">An unknown error occurred while loading items: ${escapeHtml(err.message)}</p>`;
+            body.innerHTML = `<p style="color:var(--error)">Failed to load details: ${escapeHtml(err.message)}</p>`;
         }
-    }
+    };
+
+    window.closeOrderDetail = function () {
+        const modal = document.getElementById('order-detail-modal');
+        const overlay = document.getElementById('order-detail-overlay');
+        if (modal) modal.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+    };
 
     window.updateOrderStatus = async function (orderId, newStatus) {
         try {
@@ -650,6 +693,104 @@
             alert('Error deleting coupon: ' + e.message);
         }
     };
+
+    // ===========================
+    // CATALOGS
+    // ===========================
+
+    async function loadCatalogs() {
+        const tbody = document.getElementById('admin-catalog-list');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Loading...</td></tr>';
+
+        try {
+            const data = await adminApi('/api/admin/catalogs');
+            catalogsCache = data || [];
+            refreshCatalogOptions();
+
+            if (!tbody) return;
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No catalogs found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(c => `
+                <tr>
+                    <td><strong>${escapeHtml(c.name)}</strong></td>
+                    <td>${escapeHtml(c.description || '')}</td>
+                    <td>${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="editCatalog('${c.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCatalog('${c.id}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="empty-state" style="color:var(--error)">Error loading catalogs.</td></tr>';
+        }
+    }
+
+    window.createCatalog = async function () {
+        const nameInput = document.getElementById('catalog-name');
+        const descInput = document.getElementById('catalog-desc');
+        const name = nameInput.value.trim();
+        const description = descInput.value.trim();
+
+        if (!name) {
+            alert('Catalog name is required.');
+            return;
+        }
+
+        try {
+            await adminApi('/api/admin/catalogs', 'POST', { name, description: description || null });
+            nameInput.value = '';
+            descInput.value = '';
+            loadCatalogs();
+            showToast('Catalog created.', 'success');
+        } catch (err) {
+            showToast(`Error creating catalog: ${err.message}`, 'error');
+        }
+    };
+
+    window.editCatalog = async function (catalogId) {
+        const catalog = catalogsCache.find(c => c.id === catalogId);
+        if (!catalog) return;
+        const name = prompt('Catalog name:', catalog.name || '');
+        if (name === null) return;
+        const description = prompt('Description:', catalog.description || '')
+        try {
+            await adminApi(`/api/admin/catalogs/${catalogId}`, 'PUT', { name: name.trim(), description: (description || '').trim() });
+            loadCatalogs();
+            showToast('Catalog updated.', 'success');
+        } catch (err) {
+            showToast(`Error updating catalog: ${err.message}`, 'error');
+        }
+    };
+
+    window.deleteCatalog = async function (catalogId) {
+        if (!confirm('Are you sure you want to delete this catalog?')) return;
+        try {
+            await adminApi(`/api/admin/catalogs/${catalogId}`, 'DELETE');
+            loadCatalogs();
+            showToast('Catalog deleted.', 'success');
+        } catch (err) {
+            showToast(`Error deleting catalog: ${err.message}`, 'error');
+        }
+    };
+
+    function refreshCatalogOptions() {
+        const select = document.getElementById('prod-catalog');
+        if (!select) return;
+
+        const currentValue = select.value;
+        const options = ['<option value="">Uncategorized</option>'];
+        catalogsCache.forEach(c => {
+            options.push(`<option value="${c.id}">${escapeHtml(c.name)}</option>`);
+        });
+        select.innerHTML = options.join('');
+        if (currentValue) select.value = currentValue;
+    }
 
 })();
 

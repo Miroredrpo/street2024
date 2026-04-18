@@ -13,6 +13,8 @@
     let cartTimerInterval = null;
     let isLoginMode = true;
     let pendingCartProductId = null; // Product to add after login (frictionless flow)
+    let productsCache = [];
+    let catalogsCache = [];
 
     const sb = window.supabaseClient;
 
@@ -61,9 +63,9 @@
         });
 
         // Fetch products on home page
-        const productGrid = document.getElementById('product-grid');
-        if (productGrid) {
-            fetchProducts();
+        const catalogSections = document.getElementById('catalog-sections');
+        if (catalogSections) {
+            loadStorefront();
         }
     });
 
@@ -112,7 +114,7 @@
         const adminLink = document.getElementById('admin-link');
         if (adminLink) adminLink.style.display = 'none';
         const ordersLink = document.getElementById('nav-orders-link');
-        if (ordersLink) ordersLink.style.display = 'none';
+        if (ordersLink) ordersLink.style.display = 'inline-block';
 
         updateCartBadge(0);
         renderCartBody();
@@ -211,15 +213,21 @@
     // Products
     // ===========================
 
-    async function fetchProducts() {
-        const grid = document.getElementById('product-grid');
-        if (!grid) return;
+    async function loadStorefront() {
+        const container = document.getElementById('catalog-sections');
+        if (!container) return;
 
         try {
-            const products = await apiFetch('/api/products');
-            renderProducts(products, grid);
+            const [catalogs, products] = await Promise.all([
+                apiFetch('/api/catalogs'),
+                apiFetch('/api/products')
+            ]);
+            catalogsCache = catalogs || [];
+            productsCache = products || [];
+            renderCatalogBubbles();
+            renderProducts(productsCache, container);
         } catch (error) {
-            grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:var(--space-6);">Failed to load products. Please try again later.</p>`;
+            container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:var(--space-6);">Failed to load products. Please try again later.</p>`;
             showToast('Connection issue. Please try again.', 'error');
         }
     }
@@ -228,38 +236,68 @@
         container.innerHTML = '';
 
         if (!products || products.length === 0) {
-            container.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:var(--space-6);">No products available yet. Check back soon!</p>`;
+            container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:var(--space-6);">No products available yet. Check back soon!</p>`;
             return;
         }
 
+        const catalogMap = new Map(catalogsCache.map(c => [c.id, c]));
+        const grouped = new Map();
         products.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.innerHTML = `
-                <a href="/product/${p.id}" style="text-decoration:none;color:inherit;">
-                    <div class="product-card-image">
-                        <img
-                            src="${p.image_url || '/static/fallback.svg'}"
-                            alt="${escapeHtml(p.title)}"
-                            loading="lazy"
-                            onerror="this.onerror=null;this.src='/static/fallback.svg';"
-                        >
-                    </div>
-                    <div class="product-card-body">
-                        <div class="product-card-title">${escapeHtml(p.title)}</div>
-                        <div class="product-card-price">
-                            Rs. ${parseFloat(p.price).toFixed(2)}
-                            ${p.stock !== null && p.stock <= 0 ? '<span style="color:var(--error);font-size:0.8rem;margin-left:8px;font-weight:600;">(Out of Stock)</span>' : ''}
+            const key = p.catalog_id || 'uncategorized';
+            if (!grouped.has(key)) grouped.set(key, []);
+            grouped.get(key).push(p);
+        });
+
+        const orderedKeys = catalogsCache.map(c => c.id);
+        if (grouped.has('uncategorized')) orderedKeys.push('uncategorized');
+
+        orderedKeys.forEach(key => {
+            const items = grouped.get(key);
+            if (!items || items.length === 0) return;
+
+            const catalog = catalogMap.get(key);
+            const title = catalog ? catalog.name : 'Other';
+            const section = document.createElement('div');
+            section.className = 'catalog-section';
+            section.id = `catalog-section-${key}`;
+            section.innerHTML = `<div class="catalog-section-title">${escapeHtml(title)}</div>`;
+
+            const grid = document.createElement('div');
+            grid.className = 'product-grid';
+
+            items.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <a href="/product/${p.id}" style="text-decoration:none;color:inherit;">
+                        <div class="product-card-image">
+                            <img
+                                src="${p.image_url || '/static/fallback.svg'}"
+                                alt="${escapeHtml(p.title)}"
+                                loading="lazy"
+                                onerror="this.onerror=null;this.src='/static/fallback.svg';"
+                            >
                         </div>
-                    </div>
-                </a>
-                <div class="product-card-body" style="padding-top:0;">
-                    <a href="/product/${p.id}" class="btn btn-primary" style="display: block; text-align: center; text-decoration: none;">
-                        View Product
+                        <div class="product-card-body">
+                            <div class="product-card-title">${escapeHtml(p.title)}</div>
+                            <div class="product-card-price" data-npr="${p.price}" data-inr="${p.price_inr || ''}">
+                                ${window.formatPrice ? window.formatPrice(p.price, p.price_inr) : `Rs. ${parseFloat(p.price).toFixed(2)}`}
+                                ${p.stock !== null && p.stock <= 0 ? '<span style="color:var(--error);font-size:0.8rem;margin-left:8px;font-weight:600;">(Out of Stock)</span>' : ''}
+                                ${p.show_low_stock_label && p.stock !== null && p.stock > 0 && p.stock <= 10 ? `<span style="color:var(--warning);font-size:0.8rem;margin-left:8px;font-weight:600;">(Only ${p.stock} left)</span>` : ''}
+                            </div>
+                        </div>
                     </a>
-                </div>
-            `;
-            container.appendChild(card);
+                    <div class="product-card-body" style="padding-top:0;">
+                        <a href="/product/${p.id}" class="btn btn-primary" style="display: block; text-align: center; text-decoration: none;">
+                            View Product
+                        </a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            section.appendChild(grid);
+            container.appendChild(section);
         });
     }
 
@@ -336,7 +374,7 @@
         cartItems.forEach(item => {
             const product = item.products;
             if (!product) return;
-            const itemTotal = item.quantity * parseFloat(product.price);
+            const itemTotal = item.quantity * getDisplayPrice(product);
             total += itemTotal;
 
             html += `
@@ -348,7 +386,7 @@
                         <div class="cart-item-title">${escapeHtml(product.title)}</div>
                         ${item.size ? `<div class="cart-item-size" style="font-size: var(--font-size-xs); color: var(--text-muted);">Size: ${escapeHtml(item.size)}</div>` : ''}
                         <div class="cart-item-timer highlight-alert" data-expires="${item.expires_at || ''}" style="font-size:var(--font-size-xs); color:var(--info-color); margin-top:4px;"></div>
-                        <div class="cart-item-price">Rs. ${parseFloat(product.price).toFixed(2)}</div>
+                        <div class="cart-item-price">${formatCurrency(getDisplayPrice(product))}</div>
                     </div>
                     <div class="cart-item-actions">
                         <button class="cart-item-remove" onclick="removeFromCart('${item.id}')" aria-label="Remove item">&times;</button>
@@ -357,7 +395,7 @@
                             <span class="qty">${item.quantity}</span>
                             <button onclick="updateCartQty('${item.id}', ${item.quantity + 1}, ${product.stock})">+</button>
                         </div>
-                        <span class="cart-item-total">Rs. ${itemTotal.toFixed(2)}</span>
+                        <span class="cart-item-total">${formatCurrency(itemTotal)}</span>
                     </div>
                 </div>
             `;
@@ -369,7 +407,7 @@
         if (cartFooter) {
             cartFooter.style.display = 'block';
             const totalValEl = document.getElementById('cart-total-value');
-            if(totalValEl) totalValEl.textContent = `Rs. ${total.toFixed(2)}`;
+            if (totalValEl) totalValEl.textContent = formatCurrency(total);
             
             // Re-hide inline checkout if it exists (legacy store checkout)
             const checkoutSec = document.getElementById('checkout-section');
@@ -457,8 +495,8 @@
             await fetchCart();
             
             // Refresh product grid to update Out of Stock tags immediately
-            if (document.getElementById('product-grid')) {
-                fetchProducts();
+            if (document.getElementById('catalog-sections')) {
+                loadStorefront();
             }
             // Refresh PDP
             if (window.location.pathname.startsWith('/product/')) {
@@ -521,8 +559,8 @@
             await fetchCart();
             
             // Refresh product grid to update Out of Stock tags immediately
-            if (document.getElementById('product-grid')) {
-                fetchProducts();
+            if (document.getElementById('catalog-sections')) {
+                loadStorefront();
             }
             
             // Also refresh PDP if we are on a PDP
@@ -640,19 +678,56 @@
         return div.innerHTML;
     }
 
+    function getDisplayPrice(product) {
+        const currency = localStorage.getItem('preferred_currency') || 'NPR';
+        if (currency === 'INR' && product.price_inr) {
+            return parseFloat(product.price_inr);
+        }
+        return parseFloat(product.price);
+    }
+
+    function formatCurrency(amount) {
+        const currency = localStorage.getItem('preferred_currency') || 'NPR';
+        const value = Number(amount || 0).toFixed(2);
+        return currency === 'INR' ? `₹${value}` : `Rs. ${value}`;
+    }
+
+    function renderCatalogBubbles() {
+        const bubbleContainer = document.getElementById('catalog-bubbles');
+        if (!bubbleContainer) return;
+
+        if (!catalogsCache || catalogsCache.length === 0) {
+            bubbleContainer.innerHTML = '';
+            return;
+        }
+
+        bubbleContainer.innerHTML = catalogsCache.map(c => `
+            <div class="catalog-bubble" data-target="catalog-section-${c.id}">${escapeHtml(c.name)}</div>
+        `).join('');
+
+        bubbleContainer.querySelectorAll('.catalog-bubble').forEach(bubble => {
+            bubble.addEventListener('click', () => {
+                const targetId = bubble.getAttribute('data-target');
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    }
+
 })();
 
 // --- Currency Switcher Logic ---
 document.addEventListener('DOMContentLoaded', () => {
     const currencySelect = document.getElementById('currency-select');
     if (currencySelect) {
-        // Load saved preference
         const savedCurrency = localStorage.getItem('preferred_currency') || 'NPR';
         currencySelect.value = savedCurrency;
 
         currencySelect.addEventListener('change', (e) => {
             localStorage.setItem('preferred_currency', e.target.value);
-            window.location.reload(); // Reload to refresh prices across the UI
+            window.location.reload();
         });
     }
 });
@@ -661,9 +736,9 @@ document.addEventListener('DOMContentLoaded', () => {
 window.formatPrice = (nprPrice, inrPrice) => {
     const currency = localStorage.getItem('preferred_currency') || 'NPR';
     if (currency === 'INR' && inrPrice) {
-        return `₹${inrPrice}`;
+        return `₹${Number(inrPrice).toFixed(2)}`;
     }
-    return `Rs. ${nprPrice}`;
+    return `Rs. ${Number(nprPrice).toFixed(2)}`;
 };
 
 // --- Update PDP price dynamically ---

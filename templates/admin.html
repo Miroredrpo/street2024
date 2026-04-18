@@ -50,6 +50,9 @@
                 <button class="admin-nav-item" data-tab="orders" onclick="switchAdminTab('orders')">
                     <span class="nav-icon">🧾</span> Orders
                 </button>
+                <button class="admin-nav-item" data-tab="catalogs" onclick="switchAdminTab('catalogs')">
+                    <span class="nav-icon">🧩</span> Catalogs
+                </button>
                 <button class="admin-nav-item" data-tab="coupons" onclick="switchAdminTab('coupons')">
                     <span class="nav-icon">🎟️</span> Coupons
                 </button>
@@ -158,7 +161,7 @@
                     <div class="data-table-wrapper">
                         <div class="data-table-header responsive-header">
                             <h3>Recent Orders</h3>
-                            <input type="text" id="order-search-input" placeholder="Search Order #..." oninput="filterOrders()" class="responsive-search-input">
+                            <input type="text" id="order-search-input" placeholder="Search Instagram username..." oninput="filterOrders()" class="responsive-search-input">
                         </div>
                         <div style="overflow-x:auto;">
                             <table class="data-table">
@@ -174,6 +177,35 @@
                                 </thead>
                                 <tbody id="admin-order-list">
                                     <tr><td colspan="6" class="empty-state"><p>Loading orders...</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== CATALOGS TAB ===== -->
+                <section id="tab-catalogs" class="admin-tab" style="display:none;">
+                    <div class="data-table-wrapper">
+                        <div class="data-table-header">
+                            <h3>Catalogs</h3>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border); display:flex; gap: var(--space-2); flex-wrap: wrap;">
+                            <input type="text" id="catalog-name" placeholder="Catalog name" class="form-input" style="flex:1; min-width: 200px;">
+                            <input type="text" id="catalog-desc" placeholder="Description (optional)" class="form-input" style="flex:2; min-width: 240px;">
+                            <button class="btn btn-primary" onclick="createCatalog()">+ Add Catalog</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-catalog-list">
+                                    <tr><td colspan="4" class="empty-state"><p>Loading catalogs...</p></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -241,6 +273,18 @@
             </div>
 
             <div class="form-group">
+                <label for="prod-price-inr">Price (INR)</label>
+                <input type="number" id="prod-price-inr" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+                <label for="prod-catalog">Catalog</label>
+                <select id="prod-catalog" style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-family:var(--font-family);font-size:var(--font-size-sm);">
+                    <option value="">Uncategorized</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label for="prod-image">Featured Image Upload *</label>
                 <input type="file" id="prod-image" accept="image/*" onchange="previewFile(this)">
                 <div id="prod-image-preview" class="product-image-preview">
@@ -264,6 +308,11 @@
                 <input type="number" id="prod-stock" min="0" value="0">
             </div>
 
+            <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="prod-show-low-stock" style="width:18px;height:18px;">
+                <label for="prod-show-low-stock" style="margin:0;">Show "Only X left" label</label>
+            </div>
+
             <div class="form-group">
                 <label for="prod-active">Active</label>
                 <select id="prod-active" style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-family:var(--font-family);font-size:var(--font-size-sm);">
@@ -280,6 +329,18 @@
 
     <!-- ========== TOAST CONTAINER ========== -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- ========== ORDER DETAIL MODAL ========== -->
+    <div id="order-detail-overlay" class="admin-modal-overlay" onclick="closeOrderDetail()"></div>
+    <div id="order-detail-modal" class="admin-modal" aria-hidden="true">
+        <div class="admin-modal-header">
+            <h2>Order Details</h2>
+            <button class="modal-close" onclick="closeOrderDetail()" aria-label="Close">&times;</button>
+        </div>
+        <div id="order-detail-body" style="padding: 1rem;">
+            <p>Loading...</p>
+        </div>
+    </div>
 
     <!-- ========== SCRIPTS ========== -->
     <script src="{{ url_for('static', filename='js/api.js') }}?v={{ range(1, 99999) | random }}" defer></script>

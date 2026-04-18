@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   description TEXT,
   price DECIMAL(10, 2) NOT NULL,
   price_inr DECIMAL(10, 2) DEFAULT 0.00,
+  show_low_stock_label BOOLEAN DEFAULT false,
   image_url TEXT,
   images TEXT[] DEFAULT '{}',
   sizes TEXT[] DEFAULT '{}',
@@ -73,6 +74,9 @@ CREATE TABLE IF NOT EXISTS public.orders (
   full_name TEXT,
   email TEXT,
   instagram_username TEXT,
+  country TEXT,
+  state TEXT,
+  zipcode TEXT,
   total_amount DECIMAL(10, 2) NOT NULL,
   order_number TEXT UNIQUE,
   status TEXT DEFAULT 'pending'::text, -- pending, shipped, delivered, cancelled
@@ -87,6 +91,9 @@ CREATE TABLE IF NOT EXISTS public.orders (
   city TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Fast lookup for Instagram-based tracking
+CREATE INDEX IF NOT EXISTS idx_orders_instagram_username ON public.orders (instagram_username);
 
 -- Order Items Table
 CREATE TABLE IF NOT EXISTS public.order_items (
@@ -160,6 +167,12 @@ BEGIN
     END;
 
     BEGIN
+      ALTER TABLE public.products ADD COLUMN show_low_stock_label BOOLEAN DEFAULT false;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
         ALTER TABLE public.products ADD COLUMN catalog_id UUID REFERENCES public.catalogs(id) ON DELETE SET NULL;
     EXCEPTION
         WHEN duplicate_column THEN null;
@@ -181,5 +194,23 @@ BEGIN
         ALTER TABLE public.orders ADD COLUMN instagram_username TEXT;
     EXCEPTION
         WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN country TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN state TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN zipcode TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
     END;
 END $$;
