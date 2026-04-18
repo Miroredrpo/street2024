@@ -286,7 +286,6 @@
     };
 
     async function fetchCart() {
-        if (!currentUser) return;
         try {
             cartItems = await apiFetch('/api/cart');
             window.dispatchEvent(new CustomEvent('cartUpdated', { detail: cartItems }));
@@ -316,33 +315,6 @@
 
     function renderCartBody() {
         if (!cartBody) return;
-
-        // Not logged in — show frictionless auth prompt
-        if (!currentUser) {
-            cartBody.innerHTML = `
-                <div class="cart-auth-prompt">
-                    <div class="auth-icon">🛍️</div>
-                    <h4>Save your selections</h4>
-                    <p>Log in quickly to add items to your cart.</p>
-
-                    <div class="cart-auth-form">
-                        <div class="form-group">
-                            <input type="email" id="cart-login-email" placeholder="Email">
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="cart-login-password" placeholder="Password">
-                        </div>
-                        <p id="cart-auth-error" class="auth-error" style="display:none;"></p>
-                        <button class="btn btn-primary" onclick="cartLogin()">Log In</button>
-                        <div class="auth-toggle">
-                            <a href="#" onclick="event.preventDefault();toggleCart();toggleAuthModal();">Create an account</a>
-                        </div>
-                    </div>
-                </div>
-            `;
-            if (cartFooter) cartFooter.style.display = 'none';
-            return;
-        }
 
         // Logged in but empty cart
         if (!cartItems || cartItems.length === 0) {
@@ -472,17 +444,6 @@
 
     // Add to cart
     window.addToCart = async function (productId, size = null) {
-        if (!currentUser) {
-            // Store the product ID so we add it after login
-            pendingCartProductId = productId;
-            // Open cart sidebar showing the auth prompt
-            if (!cartSidebar.classList.contains('open')) {
-                toggleCart();
-            } else {
-                renderCartBody(); // re-render to show auth
-            }
-            return;
-        }
 
         // Get quantity from PDP if available
         const pdpQtyEl = document.getElementById('pdp-qty');
@@ -680,3 +641,39 @@
     }
 
 })();
+
+// --- Currency Switcher Logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    const currencySelect = document.getElementById('currency-select');
+    if (currencySelect) {
+        // Load saved preference
+        const savedCurrency = localStorage.getItem('preferred_currency') || 'NPR';
+        currencySelect.value = savedCurrency;
+
+        currencySelect.addEventListener('change', (e) => {
+            localStorage.setItem('preferred_currency', e.target.value);
+            window.location.reload(); // Reload to refresh prices across the UI
+        });
+    }
+});
+
+// Helper for formatting prices (can be used where products are rendered)
+window.formatPrice = (nprPrice, inrPrice) => {
+    const currency = localStorage.getItem('preferred_currency') || 'NPR';
+    if (currency === 'INR' && inrPrice) {
+        return `₹${inrPrice}`;
+    }
+    return `Rs. ${nprPrice}`;
+};
+
+// --- Update PDP price dynamically ---
+document.addEventListener('DOMContentLoaded', () => {
+    const pdpPriceDisplay = document.getElementById('pdp-price-display');
+    if (pdpPriceDisplay) {
+        const npr = pdpPriceDisplay.getAttribute('data-npr');
+        const inr = pdpPriceDisplay.getAttribute('data-inr');
+        if (window.formatPrice && npr) {
+            pdpPriceDisplay.textContent = window.formatPrice(npr, inr);
+        }
+    }
+});

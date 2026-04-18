@@ -195,11 +195,11 @@ def get_product(product_id):
 @app.route("/api/cart", methods=["GET"])
 def get_cart():
     cleanup_expired_holds()
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     try:
-        res = supabase_admin.table("cart_items").select("*, products(*)").eq("user_id", user.id).execute()
+        res = supabase_admin.table("cart_items").select("*, products(*)").eq("session_id", session_id).execute()
         return jsonify(res.data), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
@@ -207,8 +207,8 @@ def get_cart():
 
 @app.route("/api/cart", methods=["POST"])
 def add_to_cart():
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json
@@ -229,7 +229,7 @@ def add_to_cart():
         max_stock = prod_res.data[0].get("stock", 0)
 
         # Check if already exists in cart (matching product and size)
-        query = supabase_admin.table("cart_items").select("*").eq("user_id", user.id).eq("product_id", product_id)
+        query = supabase_admin.table("cart_items").select("*").eq("session_id", session_id).eq("product_id", product_id)
         existing = query.execute()
         
         target_item = None
@@ -257,7 +257,7 @@ def add_to_cart():
             return jsonify(res.data[0]), 200
         else:
             payload = {
-                "user_id": user.id,
+                "session_id": session_id,
                 "product_id": product_id,
                 "quantity": quantity,
                 "expires_at": expires_at_val
@@ -275,8 +275,8 @@ def add_to_cart():
 @app.route("/api/cart/<cart_item_id>", methods=["PATCH"])
 def update_cart_item(cart_item_id):
     """Update quantity of a cart item."""
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json
@@ -288,7 +288,7 @@ def update_cart_item(cart_item_id):
     try:
         cleanup_expired_holds()
         # We need the old quantity from cart_items and current stock from products
-        cart_res = supabase_admin.table("cart_items").select("quantity, product_id, products!inner(stock)").eq("id", cart_item_id).eq("user_id", user.id).execute()
+        cart_res = supabase_admin.table("cart_items").select("quantity, product_id, products!inner(stock)").eq("id", cart_item_id).eq("session_id", session_id).execute()
         
         if not cart_res.data:
             return jsonify({"error": "Item not found in cart"}), 404
@@ -310,7 +310,7 @@ def update_cart_item(cart_item_id):
         res = supabase_admin.table("cart_items").update({
             "quantity": quantity,
             "expires_at": expires_at_val
-        }).eq("id", cart_item_id).eq("user_id", user.id).execute()
+        }).eq("id", cart_item_id).eq("session_id", session_id).execute()
 
         if not res.data:
             return jsonify({"error": "Cart item not found"}), 404
@@ -322,12 +322,12 @@ def update_cart_item(cart_item_id):
 @app.route("/api/cart/<cart_item_id>", methods=["DELETE"])
 def remove_from_cart(cart_item_id):
     cleanup_expired_holds()
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     try:
                 # Atomically delete and get the deleted item
-        del_res = supabase_admin.table("cart_items").delete().eq("id", cart_item_id).eq("user_id", user.id).execute()
+        del_res = supabase_admin.table("cart_items").delete().eq("id", cart_item_id).eq("session_id", session_id).execute()
         if del_res.data:
             qty = del_res.data[0].get('quantity', 0)
             product_id = del_res.data[0]['product_id']
@@ -347,8 +347,8 @@ def remove_from_cart(cart_item_id):
 
 @app.route("/api/checkout/validate-coupon", methods=["POST"])
 def validate_coupon():
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     
     code = request.json.get("code")
@@ -366,8 +366,8 @@ def validate_coupon():
 @app.route("/api/checkout", methods=["POST"])
 def place_order():
     cleanup_expired_holds()
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
         
     data = request.json or {}
@@ -393,7 +393,7 @@ def place_order():
         
     try:
         # Get cart
-        cart_res = supabase_admin.table("cart_items").select("*, products(*)").eq("user_id", user.id).execute()
+        cart_res = supabase_admin.table("cart_items").select("*, products(*)").eq("session_id", session_id).execute()
         if not cart_res.data:
             return jsonify({"error": "Cart is empty"}), 400
             
@@ -413,7 +413,7 @@ def place_order():
         order_number = f"ORD-{str(uuid.uuid4())[:8].upper()}"
         
         order_data = {
-            "user_id": user.id,
+            "session_id": session_id,
             "total_amount": total_amount,
             "order_number": order_number,
             "shipping_address": shipping_address,
@@ -447,7 +447,7 @@ def place_order():
         supabase_admin.table("order_items").insert(order_items_data).execute()
         
         # Remove cart items
-        supabase_admin.table("cart_items").delete().eq("user_id", user.id).execute()
+        supabase_admin.table("cart_items").delete().eq("session_id", session_id).execute()
         
         return jsonify({"message": "Order placed successfully", "order_id": order_number}), 200
         
@@ -456,26 +456,26 @@ def place_order():
 
 @app.route("/api/orders", methods=["GET"])
 def get_user_orders():
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
 
     try:
         # Fetch the user's orders and include order_items & their products
-        res = supabase_admin.table("orders").select("*, order_items(*, products(*))").eq("user_id", user.id).order('created_at', desc=True).execute()
+        res = supabase_admin.table("orders").select("*, order_items(*, products(*))").eq("session_id", session_id).order('created_at', desc=True).execute()
         return jsonify(res.data), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred while loading orders: {str(e)}"}), 500
 
 @app.route("/api/orders/<order_id>/cancel", methods=["POST"])
 def cancel_user_order(order_id):
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     
     try:
         # Verify the order belongs to the user
-        order_res = supabase_admin.table("orders").select("*").eq("id", order_id).eq("user_id", user.id).execute()
+        order_res = supabase_admin.table("orders").select("*").eq("id", order_id).eq("session_id", session_id).execute()
         if not order_res.data:
             return jsonify({"error": "Order not found"}), 404
         
@@ -595,7 +595,7 @@ def admin_get_orders():
 
     try:
         # Also include user details like phone and address if they exist
-        res = supabase_admin.table("orders").select("*, profiles(full_name)").order('created_at', desc=True).limit(100).execute()
+        res = supabase_admin.table("orders").select("*").order('created_at', desc=True).limit(100).execute()
         return jsonify(res.data), 200
     except Exception as e:
         error_str = str(e)
@@ -617,14 +617,12 @@ def admin_update_order(order_id):
         return jsonify({"error": "Status is required"}), 400
 
     try:
-        # Fetch current status first
         old_order_res = supabase_admin.table("orders").select("status").eq("id", order_id).execute()
         old_order = old_order_res.data[0] if old_order_res.data else None
 
         res = supabase_admin.table("orders").update({"status": status}).eq("id", order_id).execute()
         
         if old_order and old_order['status'] != 'cancelled' and status == 'cancelled':
-            # Restore product stock
             order_items_res = supabase_admin.table("order_items").select("*").eq("order_id", order_id).execute()
             for item in order_items_res.data:
                 product_id = item['product_id']
@@ -642,7 +640,6 @@ def admin_update_order(order_id):
 
 @app.route("/api/admin/orders/<order_id>/items", methods=["GET"])
 def admin_get_order_items(order_id):
-    """Get line items for a specific order."""
     user = get_user_from_token(request)
     if not user or not is_admin(user.id):
         return jsonify({"error": "Forbidden"}), 403
@@ -692,14 +689,10 @@ def admin_delete_coupon(coupon_id):
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
 
-@app.route("/reset-password")
-def reset_password_page():
-    return render_template("reset_password.html")
-
 @app.route("/api/upload", methods=["POST"])
 def upload_image():
-    user = get_user_from_token(request)
-    if not user:
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
 
     if 'file' not in request.files:
@@ -713,9 +706,7 @@ def upload_image():
         upload_result = cloudinary.uploader.upload(file)
         return jsonify({"url": upload_result.get("secure_url")}), 200
     except Exception as e:
-        print(f"Upload error: {e}")
-        return jsonify({"error": "Failed to upload image"}), 500
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-

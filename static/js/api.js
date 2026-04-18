@@ -1,3 +1,26 @@
+
+// GUEST SESSION MANAGER
+function getGuestSessionId() {
+    let sid = localStorage.getItem('guest_session_id');
+    if (!sid) {
+        sid = 'sess_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        localStorage.setItem('guest_session_id', sid);
+    }
+    return sid;
+}
+
+const originalFetch = window.fetch;
+window.fetch = async function() {
+    let [resource, config ] = arguments;
+    if (!config) { config = {}; }
+    if (!config.headers) { config.headers = {}; }
+    
+    // Add guest session ID to every request implicitly
+    config.headers['X-Guest-Session-ID'] = getGuestSessionId();
+    
+    return await originalFetch(resource, config);
+};
+
 /**
  * api.js — Global API wrapper & Toast notification system
  * 

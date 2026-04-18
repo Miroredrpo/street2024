@@ -242,8 +242,8 @@
 
     async function loadCheckoutData() {
         try {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if (!session) {
+            const sessionId = window.getGuestSessionId();
+            if (!sessionId) {
                 window.location.href = '/';
                 return;
             }
@@ -251,7 +251,7 @@
             const { data: cartData, error } = await window.supabaseClient
                 .from('cart_items')
                 .select('*, products(*)')
-                .eq('user_id', session.user.id);
+                .eq('session_id', sessionId);
             
             if (error) throw error;
 
@@ -371,7 +371,7 @@
         }
 
         try {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            const sessionId = window.getGuestSessionId();
             const res = await fetch('/api/checkout/validate-coupon', {
                 method: 'POST',
                 headers: { 
@@ -430,7 +430,6 @@
         btn.textContent = 'Processing...';
 
         try {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
             let paymentReceiptUrl = null;
             const paymentMethodStr = document.querySelector('input[name="payment_method"]:checked').value;
             
@@ -449,7 +448,7 @@
                     const uploadRes = await fetch('/api/upload', {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${session.access_token}`
+                            'X-Guest-Session-ID': getGuestSessionId()
                         },
                         body: formData
                     });

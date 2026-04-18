@@ -43,7 +43,7 @@
             </nav>
 
             <h1 class="pdp-title">{{ product.title }}</h1>
-            <div class="pdp-price">Rs. {{ "%.2f"|format(product.price|float) }}</div>
+            <div class="pdp-price" id="pdp-price-display" data-npr="{{ product.price }}" data-inr="{{ product.price_inr }}">Rs. {{ "%.2f"|format(product.price|float) }}</div>
 
             {% if product.stock is not none %}
             <div id="pdp-stock" class="pdp-stock">
