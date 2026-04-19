@@ -140,6 +140,7 @@
 
         // Load data
         if (tab === 'dashboard') loadDashboardStats();
+        if (tab === 'dashboard') loadFeedback();
         if (tab === 'products') loadProducts();
         if (tab === 'orders') loadOrders();
         if (tab === 'coupons') loadCoupons();
@@ -178,6 +179,116 @@
     }
 
     // ===========================
+    // Customer Feedback
+    // ===========================
+
+    async function loadFeedback() {
+        const tbody = document.getElementById('admin-feedback-list');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading...</td></tr>';
+
+        try {
+            const data = await adminApi('/api/admin/feedback');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No feedback yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const createdAt = item.created_at ? new Date(item.created_at).toLocaleString() : '—';
+                const name = item.reviewer_name || 'Anonymous';
+                const imageCell = item.image_url
+                    ? `<a href="${item.image_url}" target="_blank" rel="noopener">View</a>`
+                    : '<span style="color:var(--text-muted);">—</span>';
+
+                return `
+                    <tr>
+                        <td data-label="Date">${escapeHtml(createdAt)}</td>
+                        <td data-label="Name">${escapeHtml(name)}</td>
+                        <td data-label="Review">
+                            <div style="white-space: normal; word-break: break-word;">${escapeHtml(item.review_text || '')}</div>
+                        </td>
+                        <td data-label="Image">${imageCell}</td>
+                        <td data-label="Actions">
+                            <button class="btn btn-danger btn-sm" onclick="deleteFeedback('${item.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="color:var(--error)">Error loading feedback.</td></tr>';
+        }
+    }
+
+    window.createFeedback = async function () {
+        const nameEl = document.getElementById('feedback-name');
+        const textEl = document.getElementById('feedback-text');
+        const imageEl = document.getElementById('feedback-image');
+        if (!textEl || !nameEl) return;
+        const reviewerName = nameEl.value.trim();
+        const reviewText = textEl.value.trim();
+
+        if (!reviewerName) {
+            showToast('Please enter the reviewer name.', 'error');
+            return;
+        }
+
+        if (!reviewText) {
+            showToast('Please write a review before saving.', 'error');
+            return;
+        }
+
+        let imageUrl = '';
+        if (imageEl && imageEl.files && imageEl.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', imageEl.files[0]);
+            formData.append('upload_type', 'feedback');
+
+            try {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                imageUrl = uploadData.url;
+            } catch (err) {
+                showToast(`Image upload error: ${err.message}`, 'error');
+                return;
+            }
+        }
+
+        try {
+            await adminApi('/api/admin/feedback', 'POST', {
+                reviewer_name: reviewerName,
+                review_text: reviewText,
+                image_url: imageUrl || null
+            });
+            showToast('Feedback added.', 'success');
+            nameEl.value = '';
+            textEl.value = '';
+            if (imageEl) imageEl.value = '';
+            loadFeedback();
+        } catch (err) {
+            showToast(`An unknown error occurred while saving: ${err.message}`, 'error');
+        }
+    };
+
+    window.deleteFeedback = async function (feedbackId) {
+        if (!confirm('Are you sure you want to delete this feedback?')) return;
+
+        try {
+            await adminApi(`/api/admin/feedback/${feedbackId}`, 'DELETE');
+            showToast('Feedback deleted.', 'success');
+            loadFeedback();
+        } catch (err) {
+            showToast(`An unknown error occurred while deleting: ${err.message}`, 'error');
+        }
+    };
+
+    // ===========================
     // Product Management
     // ===========================
 
@@ -196,12 +307,12 @@
                 const tr = document.createElement('tr');
                 const isActive = p.is_active !== false;
                 tr.innerHTML = `
-                    <td><img class="table-product-img" src="${p.image_url || '/static/fallback.svg'}" alt="" onerror="this.onerror=null;this.src='/static/fallback.svg';"></td>
-                    <td><strong>${escapeHtml(p.title)}</strong></td>
-                    <td>Rs. ${parseFloat(p.price).toFixed(2)}</td>
-                    <td>${p.stock ?? 0}</td>
-                    <td><span class="status-badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
-                    <td>
+                    <td data-label="Image"><img class="table-product-img" src="${p.image_url || '/static/fallback.svg'}" alt="" onerror="this.onerror=null;this.src='/static/fallback.svg';"></td>
+                    <td data-label="Title"><strong>${escapeHtml(p.title)}</strong></td>
+                    <td data-label="Price">Rs. ${parseFloat(p.price).toFixed(2)}</td>
+                    <td data-label="Stock">${p.stock ?? 0}</td>
+                    <td data-label="Status"><span class="status-badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td data-label="Actions">
                         <div class="table-actions">
                             <button class="btn btn-secondary btn-sm" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Delete</button>
@@ -533,26 +644,26 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="font-family:monospace;font-size:var(--font-size-xs);">${o.order_number || o.id.substring(0, 4)}</td>
-                <td>
+                <td data-label="Order ID" style="font-family:monospace;font-size:var(--font-size-xs);">${o.order_number || o.id.substring(0, 4)}</td>
+                <td data-label="Customer">
                     <strong>${escapeHtml(customerName)}</strong><br>
                     <small style="color:var(--text-muted);">${escapeHtml(instagram)}</small>
                 </td>
-                <td style="font-size: 0.85rem;">
+                <td data-label="Address" style="font-size: 0.85rem;">
                     ${o.contact_number ? `Tel: ${escapeHtml(o.contact_number)}<br>` : ''}
                     ${o.country ? `${escapeHtml(o.country)}<br>` : ''}
                     ${o.country === 'Nepal' ? `${escapeHtml(o.district || '')}, ${escapeHtml(o.province || '')}<br>` : ''}
                     ${o.country === 'India' ? `${escapeHtml(o.state || '')} ${escapeHtml(o.zipcode || '')}<br>` : ''}
                     ${escapeHtml(o.shipping_address)}
                 </td>
-                <td>
+                <td data-label="Total">
                     <strong>Rs. ${parseFloat(o.total_amount).toFixed(2)}</strong><br>
                     <small style="color:var(--text-muted);">${o.payment_method || 'COD'}</small>
                 </td>
-                <td style="font-size: var(--font-size-sm);">${remarksDisplay}</td>
-                <td style="font-weight: 600;">${amountDisplay}</td>
-                <td><span class="status-badge ${o.status}">${o.status}</span></td>
-                <td onclick="event.stopPropagation();">
+                <td data-label="Remarks" style="font-size: var(--font-size-sm);">${remarksDisplay}</td>
+                <td data-label="Amount" style="font-weight: 600;">${amountDisplay}</td>
+                <td data-label="Status"><span class="status-badge ${o.status}">${o.status}</span></td>
+                <td data-label="Actions" onclick="event.stopPropagation();">
                     <div style="display:flex; flex-direction: column; gap: 6px;">
                         <button class="btn btn-secondary btn-sm" onclick="openOrderDetail('${o.id}')">View Details</button>
                         <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
@@ -748,11 +859,11 @@
             
             tbody.innerHTML = data.map(c => `
                 <tr>
-                    <td><strong>${escapeHtml(c.code)}</strong></td>
-                    <td>${c.discount_percentage}%</td>
-                    <td><span class="status-badge status-${c.is_active ? 'delivered' : 'cancelled'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
-                    <td>${new Date(c.created_at).toLocaleDateString()}</td>
-                    <td>
+                    <td data-label="Code"><strong>${escapeHtml(c.code)}</strong></td>
+                    <td data-label="Discount">${c.discount_percentage}%</td>
+                    <td data-label="Status"><span class="status-badge status-${c.is_active ? 'delivered' : 'cancelled'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td data-label="Date">${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td data-label="Actions">
                         <button class="btn btn-sm btn-outline" style="color:red; border-color:red;" onclick="deleteCoupon('${c.id}')">Delete</button>
                     </td>
                 </tr>
@@ -824,10 +935,10 @@
 
             tbody.innerHTML = data.map(c => `
                 <tr>
-                    <td><strong>${escapeHtml(c.name)}</strong></td>
-                    <td>${escapeHtml(c.description || '')}</td>
-                    <td>${new Date(c.created_at).toLocaleDateString()}</td>
-                    <td>
+                    <td data-label="Name"><strong>${escapeHtml(c.name)}</strong></td>
+                    <td data-label="Description">${escapeHtml(c.description || '')}</td>
+                    <td data-label="Created">${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td data-label="Actions">
                         <div class="table-actions">
                             <button class="btn btn-secondary btn-sm" onclick="editCatalog('${c.id}')">Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteCatalog('${c.id}')">Delete</button>
@@ -923,16 +1034,16 @@
                 const rating = Number.isFinite(r.rating) ? `${r.rating}/5` : '—';
                 return `
                     <tr>
-                        <td>${escapeHtml(createdAt)}</td>
-                        <td><strong>${escapeHtml(productTitle)}</strong></td>
-                        <td>${escapeHtml(rating)}</td>
-                        <td style="max-width: 360px;">
+                        <td data-label="Date">${escapeHtml(createdAt)}</td>
+                        <td data-label="Product"><strong>${escapeHtml(productTitle)}</strong></td>
+                        <td data-label="Rating">${escapeHtml(rating)}</td>
+                        <td data-label="Review" style="max-width: 360px;">
                             <div style="white-space: normal; word-break: break-word;">
                                 ${escapeHtml(r.review_text || '')}
                             </div>
                         </td>
-                        <td style="font-family: monospace; font-size: var(--font-size-xs);">${escapeHtml(r.session_id || '—')}</td>
-                        <td>
+                        <td data-label="Session" style="font-family: monospace; font-size: var(--font-size-xs);">${escapeHtml(r.session_id || '—')}</td>
+                        <td data-label="Actions">
                             <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')">Delete</button>
                         </td>
                     </tr>

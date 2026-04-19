@@ -276,6 +276,15 @@ def get_catalogs():
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
 
+@app.route("/api/feedback", methods=["GET"])
+def get_customer_feedback():
+    try:
+        res = supabase_admin.table("customer_feedback").select("*").order("created_at", desc=True).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
 # ---------------------
 # Protected API — Cart
 # ---------------------
@@ -969,11 +978,72 @@ def admin_delete_coupon(coupon_id):
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
 
+@app.route("/api/admin/feedback", methods=["GET"])
+def admin_get_feedback():
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        res = supabase_admin.table("customer_feedback").select("*").order("created_at", desc=True).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/feedback", methods=["POST"])
+def admin_create_feedback():
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.json or {}
+    reviewer_name = (data.get("reviewer_name") or "").strip()
+    review_text = (data.get("review_text") or "").strip()
+    image_url = (data.get("image_url") or "").strip() or None
+
+    if not reviewer_name:
+        return jsonify({"error": "Reviewer name is required"}), 400
+
+    if not review_text:
+        return jsonify({"error": "Review text is required"}), 400
+
+    if len(review_text) > 1000:
+        return jsonify({"error": "Review text must be 1000 characters or less"}), 400
+
+    try:
+        res = supabase_admin.table("customer_feedback").insert({
+            "reviewer_name": reviewer_name,
+            "review_text": review_text,
+            "image_url": image_url
+        }).execute()
+        return jsonify(res.data[0]), 201
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/feedback/<feedback_id>", methods=["DELETE"])
+def admin_delete_feedback(feedback_id):
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        res = supabase_admin.table("customer_feedback").delete().eq("id", feedback_id).execute()
+        if not res.data:
+            return jsonify({"error": "Feedback not found"}), 404
+        return jsonify({"message": "Feedback deleted"}), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
 @app.route("/api/upload", methods=["POST"])
 def upload_image():
     session_id = request.headers.get("X-Guest-Session-ID")
     if not session_id:
-        return jsonify({"error": "Unauthorized"}), 401
+        user = get_user_from_token(request)
+        if not user or not is_admin(user.id):
+            return jsonify({"error": "Unauthorized"}), 401
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
@@ -1004,6 +1074,13 @@ def upload_image():
                 "width": 900,
                 "height": 900,
                 "crop": "limit",
+            })
+        elif upload_type == "feedback":
+            base_options.update({
+                "width": 1000,
+                "height": 1000,
+                "crop": "limit",
+                "quality": "auto:eco",
             })
         else:
             # Product images: slightly compressed with a generous max size.

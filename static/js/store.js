@@ -69,6 +69,7 @@
         const catalogSections = document.getElementById('catalog-sections');
         if (catalogSections) {
             loadStorefront();
+            loadFeedback();
         }
     });
 
@@ -249,6 +250,66 @@
         } finally {
             storefrontRequest = null;
         }
+    }
+
+    async function loadFeedback() {
+        const container = document.getElementById('feedback-list');
+        if (!container) return;
+
+        try {
+            const feedback = await apiFetch('/api/feedback');
+            if (!feedback || feedback.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">No feedback yet. Check back soon!</p>';
+                return;
+            }
+
+            const cardsHtml = feedback.map(item => {
+                const imageHtml = item.image_url
+                    ? `<div class="feedback-image"><img src="${item.image_url}" alt="Customer feedback" loading="lazy" onerror="this.style.display='none';"></div>`
+                    : '';
+                const nameHtml = item.reviewer_name
+                    ? `<div class="feedback-name">${escapeHtml(item.reviewer_name)}</div>`
+                    : '<div class="feedback-name">Anonymous</div>';
+                return `
+                    <div class="feedback-card">
+                        ${nameHtml}
+                        <div class="feedback-body">${escapeHtml(item.review_text || '')}</div>
+                        ${imageHtml}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `<div class="feedback-track">${cardsHtml}</div>`;
+            initFeedbackCarousel(container, feedback.length);
+        } catch (error) {
+            container.innerHTML = '<p style="color:var(--text-muted);text-align:center;">Unable to load feedback right now.</p>';
+        }
+    }
+
+    function initFeedbackCarousel(container, total) {
+        const track = container.querySelector('.feedback-track');
+        if (!track || total <= 1) return;
+
+        let index = 0;
+        const intervalMs = 5000;
+
+        function update() {
+            track.style.transform = `translateX(-${index * 100}%)`;
+        }
+
+        function next() {
+            index = (index + 1) % total;
+            update();
+        }
+
+        update();
+        let timerId = setInterval(next, intervalMs);
+
+        container.addEventListener('mouseenter', () => clearInterval(timerId));
+        container.addEventListener('mouseleave', () => {
+            clearInterval(timerId);
+            timerId = setInterval(next, intervalMs);
+        });
     }
 
     function renderProducts(products, container) {

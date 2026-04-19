@@ -124,6 +124,21 @@ ALTER TABLE public.product_reviews ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Reviews are viewable by everyone." ON public.product_reviews FOR SELECT USING (true);
 CREATE POLICY "Reviews are insertable by everyone." ON public.product_reviews FOR INSERT WITH CHECK (true);
 
+-- Customer Feedback Table (admin-managed)
+CREATE TABLE IF NOT EXISTS public.customer_feedback (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  reviewer_name TEXT,
+  review_text TEXT NOT NULL,
+  image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.customer_feedback ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Customer feedback is viewable by everyone." ON public.customer_feedback FOR SELECT USING (true);
+CREATE POLICY "Customer feedback is modifiable by admins." ON public.customer_feedback FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
 -- Cart Items Table
 CREATE TABLE IF NOT EXISTS public.cart_items (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -259,6 +274,24 @@ BEGIN
 
     BEGIN
       ALTER TABLE public.orders ADD COLUMN admin_remarks TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.customer_feedback ADD COLUMN review_text TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.customer_feedback ADD COLUMN image_url TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.customer_feedback ADD COLUMN reviewer_name TEXT;
     EXCEPTION
       WHEN duplicate_column THEN null;
     END;

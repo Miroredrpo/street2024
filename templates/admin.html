@@ -158,6 +158,36 @@
                             <div class="stat-card-value" id="stat-products">—</div>
                         </div>
                     </div>
+
+                    <div class="data-table-wrapper" style="margin-top: var(--space-4);">
+                        <div class="data-table-header">
+                            <h3>Customer Feedback</h3>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border); display:flex; gap: var(--space-2); flex-wrap: wrap;">
+                            <input type="text" id="feedback-name" class="form-input" placeholder="Reviewer name" style="flex:1; min-width: 200px;">
+                            <textarea id="feedback-text" class="form-input" placeholder="Write a customer review..." style="flex:2; min-width: 240px; min-height: 90px; resize: vertical;"></textarea>
+                            <div style="display:flex; flex-direction: column; gap: 8px; min-width: 200px;">
+                                <input type="file" id="feedback-image" accept="image/*" class="form-input" style="padding: 8px;">
+                                <button class="btn btn-primary" onclick="createFeedback()">Add Feedback</button>
+                            </div>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Name</th>
+                                        <th>Review</th>
+                                        <th>Image</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-feedback-list">
+                                    <tr><td colspan="5" class="empty-state"><p>Loading feedback...</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- ===== PRODUCTS TAB ===== -->
