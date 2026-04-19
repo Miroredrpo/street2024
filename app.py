@@ -49,8 +49,6 @@ try:
     supabase: Client = create_client(url, key)
     supabase_admin: Client = create_client(url, service_key) if service_key else supabase
 except Exception as e:
-    print(f"Failed to initialize Supabase client: {e}")
-    supabase = None
     supabase_admin = None
 
 
@@ -194,6 +192,53 @@ def get_product(product_id):
         response = jsonify(res.data[0])
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         return response, 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/products/<product_id>/reviews", methods=["GET"])
+def get_product_reviews(product_id):
+    try:
+        res = supabase_admin.table("product_reviews").select("*") \
+            .eq("product_id", product_id).order("created_at", desc=True).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/products/<product_id>/reviews", methods=["POST"])
+def create_product_review(product_id):
+    data = request.json or {}
+    rating = data.get("rating")
+    review_text = (data.get("review_text") or "").strip()
+    session_id = request.headers.get("X-Guest-Session-ID")
+
+    if rating is None:
+        return jsonify({"error": "Rating is required"}), 400
+
+    try:
+        rating_val = int(rating)
+    except Exception:
+        return jsonify({"error": "Rating must be a number"}), 400
+
+    if rating_val < 1 or rating_val > 5:
+        return jsonify({"error": "Rating must be between 1 and 5"}), 400
+
+    if not review_text:
+        return jsonify({"error": "Review text is required"}), 400
+
+    if len(review_text) > 1000:
+        return jsonify({"error": "Review text must be 1000 characters or less"}), 400
+
+    try:
+        review_data = {
+            "product_id": product_id,
+            "session_id": session_id,
+            "rating": rating_val,
+            "review_text": review_text
+        }
+        res = supabase_admin.table("product_reviews").insert(review_data).execute()
+        return jsonify(res.data[0]), 201
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 

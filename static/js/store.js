@@ -15,6 +15,9 @@
     let pendingCartProductId = null; // Product to add after login (frictionless flow)
     let productsCache = [];
     let catalogsCache = [];
+    let storefrontRequest = null;
+    let storefrontLastFetch = 0;
+    const STOREFRONT_TTL_MS = 30000;
 
     const sb = window.supabaseClient;
 
@@ -217,18 +220,34 @@
         const container = document.getElementById('catalog-sections');
         if (!container) return;
 
+        const now = Date.now();
+        if (productsCache.length && now - storefrontLastFetch < STOREFRONT_TTL_MS) {
+            renderCatalogBubbles();
+            renderProducts(productsCache, container);
+            return;
+        }
+
+        if (storefrontRequest) {
+            await storefrontRequest;
+            return;
+        }
+
         try {
-            const [catalogs, products] = await Promise.all([
+            storefrontRequest = Promise.all([
                 apiFetch('/api/catalogs'),
                 apiFetch('/api/products')
             ]);
+            const [catalogs, products] = await storefrontRequest;
             catalogsCache = catalogs || [];
             productsCache = products || [];
+            storefrontLastFetch = Date.now();
             renderCatalogBubbles();
             renderProducts(productsCache, container);
         } catch (error) {
             container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:var(--space-6);">Failed to load products. Please try again later.</p>`;
             showToast('Connection issue. Please try again.', 'error');
+        } finally {
+            storefrontRequest = null;
         }
     }
 
@@ -298,6 +317,34 @@
 
             section.appendChild(grid);
             container.appendChild(section);
+        });
+
+        initScrollReveal();
+    }
+
+    function initScrollReveal() {
+        const elements = document.querySelectorAll('.product-card, .catalog-section, .pdp-image-col, .pdp-details, .checkout-section, .order-card');
+        if (!elements.length || !('IntersectionObserver' in window)) return;
+
+        elements.forEach(el => {
+            if (!el.classList.contains('reveal')) {
+                el.classList.add('reveal');
+            }
+        });
+
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('reveal-in');
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+
+        elements.forEach(el => {
+            if (!el.classList.contains('reveal-in')) {
+                observer.observe(el);
+            }
         });
     }
 

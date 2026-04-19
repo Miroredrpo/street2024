@@ -8,6 +8,35 @@
 
 {% block content %}
 <div class="container">
+    <style>
+        .review-stars {
+            display: inline-flex;
+            gap: 6px;
+        }
+        .review-stars .star-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+        }
+        .review-stars .star-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--bg-primary);
+        }
+        .review-stars .star-btn.selected {
+            color: #f59e0b;
+            border-color: #f59e0b;
+            background: #fff7ed;
+        }
+    </style>
     <div class="pdp-layout">
         <!-- Left: Sticky Image -->
         <div class="pdp-image-col">
@@ -120,6 +149,31 @@
                 Out of Stock
             </button>
             {% endif %}
+
+            <div class="pdp-reviews" style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border);">
+                <h3 style="margin-bottom: 12px;">Reviews</h3>
+                <div class="review-form" style="margin-bottom: 16px;">
+                    <div style="display:flex; gap: 10px; align-items:center; margin-bottom: 10px;">
+                        <span style="font-weight: 600;">Your Rating:</span>
+                        <div id="review-stars" class="review-stars">
+                            <button type="button" class="star-btn" data-value="1" aria-label="1 star">☆</button>
+                            <button type="button" class="star-btn" data-value="2" aria-label="2 stars">☆</button>
+                            <button type="button" class="star-btn" data-value="3" aria-label="3 stars">☆</button>
+                            <button type="button" class="star-btn" data-value="4" aria-label="4 stars">☆</button>
+                            <button type="button" class="star-btn" data-value="5" aria-label="5 stars">☆</button>
+                        </div>
+                    </div>
+                    <textarea id="review-text" maxlength="1000" placeholder="Share your thoughts..." style="width:100%; min-height:120px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); font-family: var(--font-family); font-size: var(--font-size-sm); resize: vertical;"></textarea>
+                    <div style="display:flex; justify-content: space-between; align-items:center; margin-top: 8px;">
+                        <small id="review-count" style="color: var(--text-muted);">0 / 1000</small>
+                        <button class="btn btn-primary btn-sm" onclick="submitReview()">Submit Review</button>
+                    </div>
+                </div>
+
+                <div id="review-list" style="display:grid; gap: 12px;">
+                    <p style="color: var(--text-muted);">Loading reviews...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -129,6 +183,8 @@
 <script>
     const productId = "{{ product.id }}";
     let pdpQty = 1;
+    let selectedRating = 0;
+    let reviewsLoaded = false;
 
     function changeQty(delta) {
         const stockStr = "{{ product.stock }}";
@@ -136,5 +192,129 @@
         pdpQty = Math.max(1, Math.min(maxStock > 0 ? maxStock : 1, pdpQty + delta));
         document.getElementById('pdp-qty').textContent = pdpQty;
     }
+
+    function initReviewStars() {
+        const stars = document.querySelectorAll('.star-btn');
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                selectedRating = parseInt(star.getAttribute('data-value'), 10);
+                updateStarUI();
+            });
+        });
+    }
+
+    function updateStarUI() {
+        const stars = document.querySelectorAll('.star-btn');
+        stars.forEach(star => {
+            const val = parseInt(star.getAttribute('data-value'), 10);
+            const isSelected = val <= selectedRating;
+            star.textContent = isSelected ? '★' : '☆';
+            star.classList.toggle('selected', isSelected);
+        });
+    }
+
+    function updateReviewCount() {
+        const text = document.getElementById('review-text');
+        const count = document.getElementById('review-count');
+        if (text && count) {
+            count.textContent = `${text.value.length} / 1000`;
+        }
+    }
+
+    async function loadReviews() {
+        const list = document.getElementById('review-list');
+        if (!list) return;
+
+        try {
+            const res = await fetch(`/api/products/${productId}/reviews`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load reviews');
+
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-muted);">No reviews yet. Be the first!</p>';
+                return;
+            }
+
+            list.innerHTML = data.map(r => `
+                <div style="padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-primary);">
+                    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 6px;">
+                        <div style="font-size: var(--font-size-sm);">${renderStars(r.rating)}</div>
+                        <small style="color: var(--text-muted);">${new Date(r.created_at).toLocaleDateString()}</small>
+                    </div>
+                    <div style="font-size: var(--font-size-sm); color: var(--text-main);">${escapeHtml(r.review_text)}</div>
+                </div>
+            `).join('');
+        } catch (err) {
+            list.innerHTML = `<p style="color: var(--error)">Error loading reviews: ${err.message}</p>`;
+        }
+    }
+
+    async function submitReview() {
+        const textEl = document.getElementById('review-text');
+        if (!selectedRating) {
+            alert('Please select a rating.');
+            return;
+        }
+        const reviewText = textEl.value.trim();
+        if (!reviewText) {
+            alert('Please write a review.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/products/${productId}/reviews`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rating: selectedRating, review_text: reviewText })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to submit review');
+
+            selectedRating = 0;
+            updateStarUI();
+            textEl.value = '';
+            updateReviewCount();
+            loadReviews();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    function renderStars(rating) {
+        const r = parseInt(rating, 10) || 0;
+        return '★★★★★'.slice(0, r) + '☆☆☆☆☆'.slice(0, 5 - r);
+    }
+
+    function escapeHtml(unsafe) {
+        return (unsafe || '').toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initReviewStars();
+        updateReviewCount();
+        const textEl = document.getElementById('review-text');
+        if (textEl) textEl.addEventListener('input', updateReviewCount);
+        const reviewSection = document.querySelector('.pdp-reviews');
+        if (reviewSection && 'IntersectionObserver' in window) {
+            const reviewObserver = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !reviewsLoaded) {
+                        reviewsLoaded = true;
+                        loadReviews();
+                        obs.disconnect();
+                    }
+                });
+            }, { rootMargin: '200px 0px 200px 0px', threshold: 0.1 });
+            reviewObserver.observe(reviewSection);
+        } else {
+            reviewsLoaded = true;
+            loadReviews();
+        }
+    });
 </script>
 {% endblock %}

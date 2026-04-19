@@ -153,7 +153,6 @@ img {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
-}
 
 .nav-user-greeting {
     font-size: var(--font-size-sm);
@@ -217,6 +216,19 @@ img {
     background: transparent;
     color: var(--text-muted);
     padding: 8px 12px;
+}
+
+/* Scroll reveal (non-layout impacting) */
+.reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 420ms ease, transform 420ms ease;
+    will-change: opacity, transform;
+}
+
+.reveal.reveal-in {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .btn-ghost:hover {

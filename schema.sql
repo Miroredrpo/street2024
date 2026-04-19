@@ -105,6 +105,20 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   price_at_time DECIMAL(10, 2) NOT NULL
 );
 
+-- Product Reviews Table
+CREATE TABLE IF NOT EXISTS public.product_reviews (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+  session_id TEXT,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review_text TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.product_reviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Reviews are viewable by everyone." ON public.product_reviews FOR SELECT USING (true);
+CREATE POLICY "Reviews are insertable by everyone." ON public.product_reviews FOR INSERT WITH CHECK (true);
+
 -- Cart Items Table
 CREATE TABLE IF NOT EXISTS public.cart_items (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
