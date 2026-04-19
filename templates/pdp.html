@@ -14,13 +14,13 @@
             gap: 6px;
         }
         .review-stars .star-btn {
-            width: 34px;
-            height: 34px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             border: 1px solid var(--border);
             background: var(--bg-secondary);
             color: var(--text-muted);
-            font-size: 1.1rem;
+            font-size: 1.35rem;
             line-height: 1;
             cursor: pointer;
             transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
@@ -65,6 +65,12 @@
 
         <!-- Right: Details -->
         <div class="pdp-details">
+            {% if product.size_chart_url %}
+            <div class="pdp-size-chart">
+                <div class="pdp-size-chart-label">Size chart</div>
+                <img src="{{ product.size_chart_url }}" alt="Size chart" onerror="this.style.display='none';">
+            </div>
+            {% endif %}
             <nav class="pdp-breadcrumb">
                 <a href="/">Home</a>
                 <span class="separator">/</span>
@@ -72,7 +78,10 @@
             </nav>
 
             <h1 class="pdp-title">{{ product.title }}</h1>
-            <div class="pdp-price" id="pdp-price-display" data-npr="{{ product.price }}" data-inr="{{ product.price_inr }}">Rs. {{ "%.2f"|format(product.price|float) }}</div>
+            <div class="pdp-price" id="pdp-price-display" data-npr="{{ product.price }}" data-inr="{{ product.price_inr }}" data-sale-npr="{{ product.sale_price }}" data-sale-inr="{{ product.sale_price_inr }}">
+                <span class="price-original">Rs. {{ "%.2f"|format(product.price|float) }}</span>
+                <span class="price-sale" style="display:none;"></span>
+            </div>
 
             {% if product.stock is not none %}
             <div id="pdp-stock" class="pdp-stock">

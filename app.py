@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone, timedelta
+from urllib.parse import urlparse
 from flask import Flask, jsonify, request, render_template, abort
 from supabase import create_client, Client
 import os
@@ -90,6 +91,29 @@ def normalize_instagram(username):
         cleaned = cleaned[1:]
     cleaned = cleaned.replace("@", "")
     return cleaned.strip()
+
+
+def cloudinary_public_id_from_url(url):
+    if not url:
+        return None
+    try:
+        parsed = urlparse(url)
+        path = parsed.path or ""
+        if "/upload/" not in path:
+            return None
+        tail = path.split("/upload/", 1)[1]
+        # Drop version segment if present (e.g., v12345/)
+        parts = tail.split("/", 1)
+        if parts and parts[0].startswith("v") and parts[0][1:].isdigit():
+            tail = parts[1] if len(parts) > 1 else ""
+        if not tail:
+            return None
+        # Remove file extension
+        if "." in tail:
+            tail = tail.rsplit(".", 1)[0]
+        return tail or None
+    except Exception:
+        return None
 
 
 # ---------------------
@@ -689,6 +713,27 @@ def admin_delete_product(product_id):
         return jsonify({"error": "Forbidden"}), 403
 
     try:
+        prod_res = supabase_admin.table("products").select("image_url, images").eq("id", product_id).single().execute()
+        product = prod_res.data or {}
+
+        image_urls = []
+        if product.get("image_url"):
+            image_urls.append(product["image_url"])
+        if isinstance(product.get("images"), list):
+            image_urls.extend([u for u in product["images"] if u])
+
+        public_ids = []
+        for url in image_urls:
+            public_id = cloudinary_public_id_from_url(url)
+            if public_id:
+                public_ids.append(public_id)
+
+        for public_id in set(public_ids):
+            try:
+                cloudinary.uploader.destroy(public_id, resource_type="image")
+            except Exception as e:
+                print(f"Cloudinary delete failed for {public_id}: {e}")
+
         supabase_admin.table("products").delete().eq("id", product_id).execute()
         return jsonify({"message": "Product deleted"}), 200
     except Exception as e:
@@ -718,19 +763,40 @@ def admin_update_order(order_id):
     if not user or not is_admin(user.id):
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.json
+    data = request.json or {}
     status = data.get("status")
+    admin_remarks = data.get("admin_remarks")
+    admin_amount = data.get("admin_amount")
 
-    if not status:
-        return jsonify({"error": "Status is required"}), 400
+    if status is None and admin_remarks is None and admin_amount is None:
+        return jsonify({"error": "No updates provided"}), 400
+
+    update_data = {}
+    if status is not None:
+        update_data["status"] = status
+
+    if admin_remarks is not None:
+        update_data["admin_remarks"] = admin_remarks
+
+    if admin_amount is not None:
+        if admin_amount == "":
+            admin_amount = None
+        if admin_amount is not None:
+            try:
+                admin_amount = float(admin_amount)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Admin amount must be a number"}), 400
+        update_data["admin_amount"] = admin_amount
 
     try:
-        old_order_res = supabase_admin.table("orders").select("status").eq("id", order_id).execute()
-        old_order = old_order_res.data[0] if old_order_res.data else None
+        old_order = None
+        if status is not None:
+            old_order_res = supabase_admin.table("orders").select("status").eq("id", order_id).execute()
+            old_order = old_order_res.data[0] if old_order_res.data else None
 
-        res = supabase_admin.table("orders").update({"status": status}).eq("id", order_id).execute()
-        
-        if old_order and old_order['status'] != 'cancelled' and status == 'cancelled':
+        res = supabase_admin.table("orders").update(update_data).eq("id", order_id).execute()
+
+        if status is not None and old_order and old_order['status'] != 'cancelled' and status == 'cancelled':
             order_items_res = supabase_admin.table("order_items").select("*").eq("order_id", order_id).execute()
             for item in order_items_res.data:
                 product_id = item['product_id']
@@ -769,6 +835,35 @@ def admin_get_order_detail(order_id):
         res = supabase_admin.table("orders").select("*, order_items(*, products(*))") \
             .eq("id", order_id).single().execute()
         return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/reviews", methods=["GET"])
+def admin_get_reviews():
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        res = supabase_admin.table("product_reviews").select("*, products(title)") \
+            .order("created_at", desc=True).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/reviews/<review_id>", methods=["DELETE"])
+def admin_delete_review(review_id):
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        res = supabase_admin.table("product_reviews").delete().eq("id", review_id).execute()
+        if not res.data:
+            return jsonify({"error": "Review not found"}), 404
+        return jsonify({"message": "Review deleted"}), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
@@ -888,7 +983,37 @@ def upload_image():
         return jsonify({"error": "No selected file"}), 400
 
     try:
-        upload_result = cloudinary.uploader.upload(file)
+        upload_type = (request.form.get("upload_type") or "product").strip().lower()
+        base_options = {
+            "resource_type": "image",
+            "fetch_format": "auto",
+            "quality": "auto:good",
+            "flags": "strip_profile",
+        }
+
+        if upload_type == "receipt":
+            # Keep receipts readable while reducing size.
+            base_options.update({
+                "width": 1400,
+                "height": 1400,
+                "crop": "limit",
+            })
+        elif upload_type == "size_chart":
+            # Compress size charts but keep them legible.
+            base_options.update({
+                "width": 900,
+                "height": 900,
+                "crop": "limit",
+            })
+        else:
+            # Product images: slightly compressed with a generous max size.
+            base_options.update({
+                "width": 1600,
+                "height": 1600,
+                "crop": "limit",
+            })
+
+        upload_result = cloudinary.uploader.upload(file, **base_options)
         return jsonify({"url": upload_result.get("secure_url")}), 200
     except Exception as e:
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500

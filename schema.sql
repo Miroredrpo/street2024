@@ -57,9 +57,12 @@ CREATE TABLE IF NOT EXISTS public.products (
   title TEXT NOT NULL,
   description TEXT,
   price DECIMAL(10, 2) NOT NULL,
+  sale_price DECIMAL(10, 2) DEFAULT 0.00,
   price_inr DECIMAL(10, 2) DEFAULT 0.00,
+  sale_price_inr DECIMAL(10, 2) DEFAULT 0.00,
   show_low_stock_label BOOLEAN DEFAULT false,
   image_url TEXT,
+  size_chart_url TEXT,
   images TEXT[] DEFAULT '{}',
   sizes TEXT[] DEFAULT '{}',
   stock INTEGER DEFAULT 0,
@@ -78,6 +81,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
   state TEXT,
   zipcode TEXT,
   total_amount DECIMAL(10, 2) NOT NULL,
+  admin_amount DECIMAL(10, 2),
+  admin_remarks TEXT,
   order_number TEXT UNIQUE,
   status TEXT DEFAULT 'pending'::text, -- pending, shipped, delivered, cancelled
   payment_method TEXT DEFAULT 'cash_on_delivery'::text,
@@ -181,6 +186,24 @@ BEGIN
     END;
 
     BEGIN
+      ALTER TABLE public.products ADD COLUMN sale_price DECIMAL(10, 2) DEFAULT 0.00;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.products ADD COLUMN sale_price_inr DECIMAL(10, 2) DEFAULT 0.00;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.products ADD COLUMN size_chart_url TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
       ALTER TABLE public.products ADD COLUMN show_low_stock_label BOOLEAN DEFAULT false;
     EXCEPTION
       WHEN duplicate_column THEN null;
@@ -224,6 +247,18 @@ BEGIN
 
     BEGIN
       ALTER TABLE public.orders ADD COLUMN zipcode TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN admin_amount DECIMAL(10, 2);
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN admin_remarks TEXT;
     EXCEPTION
       WHEN duplicate_column THEN null;
     END;

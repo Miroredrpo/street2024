@@ -285,11 +285,15 @@
             grid.className = 'product-grid';
 
             items.forEach(p => {
+                const isOnSale = (parseFloat(p.sale_price || 0) > 0) || (parseFloat(p.sale_price_inr || 0) > 0);
+                const basePrice = getBasePrice(p);
+                const salePrice = getSalePrice(p);
                 const card = document.createElement('div');
                 card.className = 'product-card';
                 card.innerHTML = `
                     <a href="/product/${p.id}" style="text-decoration:none;color:inherit;">
                         <div class="product-card-image">
+                            ${isOnSale ? '<span class="product-sale-badge">On Sale</span>' : ''}
                             <img
                                 src="${p.image_url || '/static/fallback.svg'}"
                                 alt="${escapeHtml(p.title)}"
@@ -299,8 +303,11 @@
                         </div>
                         <div class="product-card-body">
                             <div class="product-card-title">${escapeHtml(p.title)}</div>
-                            <div class="product-card-price" data-npr="${p.price}" data-inr="${p.price_inr || ''}">
-                                ${window.formatPrice ? window.formatPrice(p.price, p.price_inr) : `Rs. ${parseFloat(p.price).toFixed(2)}`}
+                            <div class="product-card-price" data-npr="${p.price}" data-inr="${p.price_inr || ''}" data-sale-npr="${p.sale_price || ''}" data-sale-inr="${p.sale_price_inr || ''}">
+                                ${isOnSale && salePrice > 0 ? `
+                                    <span class="price-original price-strike">${formatCurrency(basePrice)}</span>
+                                    <span class="price-sale">${formatCurrency(salePrice)}</span>
+                                ` : `${formatCurrency(basePrice)}`}
                                 ${p.stock !== null && p.stock <= 0 ? '<span style="color:var(--error);font-size:0.8rem;margin-left:8px;font-weight:600;">(Out of Stock)</span>' : ''}
                                 ${p.show_low_stock_label && p.stock !== null && p.stock > 0 && p.stock <= 10 ? `<span style="color:var(--warning);font-size:0.8rem;margin-left:8px;font-weight:600;">(Only ${p.stock} left)</span>` : ''}
                             </div>
@@ -424,6 +431,12 @@
             const itemTotal = item.quantity * getDisplayPrice(product);
             total += itemTotal;
 
+            const basePrice = getBasePrice(product);
+            const salePrice = getSalePrice(product);
+            const priceHtml = salePrice && salePrice > 0
+                ? `<span class="price-original">${formatCurrency(basePrice)}</span><span class="price-sale">${formatCurrency(salePrice)}</span>`
+                : `${formatCurrency(basePrice)}`;
+
             html += `
                 <div class="cart-item">
                     <div class="cart-item-image">
@@ -433,7 +446,7 @@
                         <div class="cart-item-title">${escapeHtml(product.title)}</div>
                         ${item.size ? `<div class="cart-item-size" style="font-size: var(--font-size-xs); color: var(--text-muted);">Size: ${escapeHtml(item.size)}</div>` : ''}
                         <div class="cart-item-timer highlight-alert" data-expires="${item.expires_at || ''}" style="font-size:var(--font-size-xs); color:var(--info-color); margin-top:4px;"></div>
-                        <div class="cart-item-price">${formatCurrency(getDisplayPrice(product))}</div>
+                        <div class="cart-item-price">${priceHtml}</div>
                     </div>
                     <div class="cart-item-actions">
                         <button class="cart-item-remove" onclick="removeFromCart('${item.id}')" aria-label="Remove item">&times;</button>
@@ -725,7 +738,15 @@
         return div.innerHTML;
     }
 
-    function getDisplayPrice(product) {
+    function getSalePrice(product) {
+        const currency = localStorage.getItem('preferred_currency') || 'NPR';
+        if (currency === 'INR' && product.sale_price_inr) {
+            return parseFloat(product.sale_price_inr);
+        }
+        return parseFloat(product.sale_price);
+    }
+
+    function getBasePrice(product) {
         const currency = localStorage.getItem('preferred_currency') || 'NPR';
         if (currency === 'INR' && product.price_inr) {
             return parseFloat(product.price_inr);
@@ -733,11 +754,21 @@
         return parseFloat(product.price);
     }
 
+    function getDisplayPrice(product) {
+        const salePrice = getSalePrice(product);
+        if (salePrice && salePrice > 0) {
+            return salePrice;
+        }
+        return getBasePrice(product);
+    }
+
     function formatCurrency(amount) {
         const currency = localStorage.getItem('preferred_currency') || 'NPR';
         const value = Number(amount || 0).toFixed(2);
         return currency === 'INR' ? `₹${value}` : `Rs. ${value}`;
     }
+
+    window.formatCurrency = formatCurrency;
 
     function renderCatalogBubbles() {
         const bubbleContainer = document.getElementById('catalog-bubbles');
@@ -780,12 +811,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Helper for formatting prices (can be used where products are rendered)
-window.formatPrice = (nprPrice, inrPrice) => {
+window.formatPrice = (nprPrice, inrPrice, saleNpr, saleInr) => {
     const currency = localStorage.getItem('preferred_currency') || 'NPR';
-    if (currency === 'INR' && inrPrice) {
-        return `₹${Number(inrPrice).toFixed(2)}`;
+    const base = currency === 'INR' && inrPrice ? Number(inrPrice) : Number(nprPrice);
+    const sale = currency === 'INR' && saleInr ? Number(saleInr) : Number(saleNpr);
+    if (sale && sale > 0) {
+        return { base, sale };
     }
-    return `Rs. ${Number(nprPrice).toFixed(2)}`;
+    return { base, sale: null };
 };
 
 // --- Update PDP price dynamically ---
@@ -794,8 +827,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pdpPriceDisplay) {
         const npr = pdpPriceDisplay.getAttribute('data-npr');
         const inr = pdpPriceDisplay.getAttribute('data-inr');
+        const saleNpr = pdpPriceDisplay.getAttribute('data-sale-npr');
+        const saleInr = pdpPriceDisplay.getAttribute('data-sale-inr');
         if (window.formatPrice && npr) {
-            pdpPriceDisplay.textContent = window.formatPrice(npr, inr);
+            const priceData = window.formatPrice(npr, inr, saleNpr, saleInr);
+            const baseEl = pdpPriceDisplay.querySelector('.price-original');
+            const saleEl = pdpPriceDisplay.querySelector('.price-sale');
+            if (priceData.sale && saleEl && baseEl) {
+                baseEl.textContent = window.formatCurrency(priceData.base);
+                saleEl.textContent = window.formatCurrency(priceData.sale);
+                baseEl.style.display = 'inline-flex';
+                saleEl.style.display = 'inline-flex';
+                baseEl.classList.add('price-strike');
+            } else if (baseEl) {
+                baseEl.textContent = window.formatCurrency(priceData.base);
+                baseEl.classList.remove('price-strike');
+                if (saleEl) saleEl.style.display = 'none';
+            }
         }
     }
 });

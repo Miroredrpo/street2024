@@ -474,9 +474,13 @@
 
     function getUnitPrice(product) {
         const currency = getCurrencyPreference();
-        if (currency === 'INR' && product.price_inr) {
-            return parseFloat(product.price_inr);
+        if (currency === 'INR') {
+            const saleInr = parseFloat(product.sale_price_inr || 0);
+            if (saleInr > 0) return saleInr;
+            if (product.price_inr) return parseFloat(product.price_inr);
         }
+        const sale = parseFloat(product.sale_price || 0);
+        if (sale > 0) return sale;
         return parseFloat(product.price);
     }
 
@@ -602,6 +606,7 @@
                 btn.textContent = 'Uploading Receipt...';
                 const formData = new FormData();
                 formData.append('file', fileInput.files[0]);
+                formData.append('upload_type', 'receipt');
                 
                 try {
                     const uploadRes = await fetch('/api/upload', {

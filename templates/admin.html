@@ -42,19 +42,40 @@
 
             <nav class="admin-sidebar-nav">
                 <button class="admin-nav-item active" data-tab="dashboard" onclick="switchAdminTab('dashboard')">
-                    <span class="nav-icon">📊</span> Dashboard
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
+                    </span>
+                    Dashboard
                 </button>
                 <button class="admin-nav-item" data-tab="products" onclick="switchAdminTab('products')">
-                    <span class="nav-icon">📦</span> Products
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 7.5V16.5L12 21l9-4.5V7.5"/></svg>
+                    </span>
+                    Products
                 </button>
                 <button class="admin-nav-item" data-tab="orders" onclick="switchAdminTab('orders')">
-                    <span class="nav-icon">🧾</span> Orders
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M9 12h6M9 8h3M9 16h6"/></svg>
+                    </span>
+                    Orders
+                </button>
+                <button class="admin-nav-item" data-tab="reviews" onclick="switchAdminTab('reviews')">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 18l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9L12 3Z"/></svg>
+                    </span>
+                    Reviews
                 </button>
                 <button class="admin-nav-item" data-tab="catalogs" onclick="switchAdminTab('catalogs')">
-                    <span class="nav-icon">🧩</span> Catalogs
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+                    </span>
+                    Catalogs
                 </button>
                 <button class="admin-nav-item" data-tab="coupons" onclick="switchAdminTab('coupons')">
-                    <span class="nav-icon">🎟️</span> Coupons
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h9l5 5v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/><path d="M9 9h.01M15 15h.01"/><path d="M14 9 9 14"/></svg>
+                    </span>
+                    Coupons
                 </button>
             </nav>
 
@@ -94,35 +115,45 @@
                         <div class="stat-card">
                             <div class="stat-card-header">
                                 <span class="stat-card-label">Total Sales</span>
-                                <span class="stat-card-icon">💰</span>
+                                <span class="stat-card-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h4l3 5 4-10 3 5h4"/></svg>
+                                </span>
                             </div>
                             <div class="stat-card-value" id="stat-sales">—</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
                                 <span class="stat-card-label">Total Orders</span>
-                                <span class="stat-card-icon">📋</span>
+                                <span class="stat-card-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M9 12h6M9 8h3M9 16h6"/></svg>
+                                </span>
                             </div>
                             <div class="stat-card-value" id="stat-orders">—</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
                                 <span class="stat-card-label">Pending Orders</span>
-                                <span class="stat-card-icon">⏳</span>
+                                <span class="stat-card-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                                </span>
                             </div>
                             <div class="stat-card-value" id="stat-pending">—</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
                                 <span class="stat-card-label">Low Stock Items</span>
-                                <span class="stat-card-icon">⚠️</span>
+                                <span class="stat-card-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
+                                </span>
                             </div>
                             <div class="stat-card-value" id="stat-lowstock">—</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
                                 <span class="stat-card-label">Total Products</span>
-                                <span class="stat-card-icon">📦</span>
+                                <span class="stat-card-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 7.5V16.5L12 21l9-4.5V7.5"/></svg>
+                                </span>
                             </div>
                             <div class="stat-card-value" id="stat-products">—</div>
                         </div>
@@ -171,12 +202,40 @@
                                         <th>Customer</th>
                                         <th>Address</th>
                                         <th>Total</th>
+                                        <th>Remarks</th>
+                                        <th>Amount</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-order-list">
-                                    <tr><td colspan="6" class="empty-state"><p>Loading orders...</p></td></tr>
+                                    <tr><td colspan="8" class="empty-state"><p>Loading orders...</p></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== REVIEWS TAB ===== -->
+                <section id="tab-reviews" class="admin-tab" style="display:none;">
+                    <div class="data-table-wrapper">
+                        <div class="data-table-header">
+                            <h3>Product Reviews</h3>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Product</th>
+                                        <th>Rating</th>
+                                        <th>Review</th>
+                                        <th>Session</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-review-list">
+                                    <tr><td colspan="6" class="empty-state"><p>Loading reviews...</p></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -273,8 +332,18 @@
             </div>
 
             <div class="form-group">
+                <label for="prod-sale-price">Sale Price (Rs.)</label>
+                <input type="number" id="prod-sale-price" step="0.01" min="0" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
                 <label for="prod-price-inr">Price (INR)</label>
                 <input type="number" id="prod-price-inr" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+                <label for="prod-sale-price-inr">Sale Price (INR)</label>
+                <input type="number" id="prod-sale-price-inr" step="0.01" min="0" placeholder="0.00">
             </div>
 
             <div class="form-group">
@@ -296,6 +365,12 @@
                 <label for="prod-images">Other Images Upload (Multiple)</label>
                 <input type="file" id="prod-images" accept="image/*" multiple>
                 <div id="prod-existing-images" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;" data-urls="[]"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="prod-size-chart">Size Chart Upload (Optional)</label>
+                <input type="file" id="prod-size-chart" accept="image/*">
+                <div id="prod-size-chart-note" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;" data-url=""></div>
             </div>
 
             <div class="form-group">

@@ -127,7 +127,7 @@
         if (targetTab) targetTab.style.display = 'block';
 
         // Update page title
-        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', catalogs: 'Catalogs', coupons: 'Coupons' };
+        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', catalogs: 'Catalogs', coupons: 'Coupons', reviews: 'Reviews' };
         document.getElementById('admin-page-title').textContent = titles[tab] || 'Dashboard';
 
         // Close mobile sidebar if open
@@ -144,6 +144,7 @@
         if (tab === 'orders') loadOrders();
         if (tab === 'coupons') loadCoupons();
         if (tab === 'catalogs') loadCatalogs();
+        if (tab === 'reviews') loadReviews();
 
         // Close mobile sidebar
         document.getElementById('admin-sidebar').classList.remove('open');
@@ -187,7 +188,7 @@
             tbody.innerHTML = '';
 
             if (!products || products.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-icon">📦</div><p>No products yet. Add your first one!</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-icon">Products</div><p>No products yet. Add your first one!</p></td></tr>';
                 return;
             }
 
@@ -226,6 +227,14 @@
         fileInput.value = '';
         fileInput.dataset.existingUrl = '';
 
+        const sizeChartInput = document.getElementById('prod-size-chart');
+        if (sizeChartInput) sizeChartInput.value = '';
+        const sizeChartNote = document.getElementById('prod-size-chart-note');
+        if (sizeChartNote) {
+            sizeChartNote.dataset.url = '';
+            sizeChartNote.textContent = '';
+        }
+
         const otherFileInput = document.getElementById('prod-images');
         if (otherFileInput) {
             otherFileInput.value = '';
@@ -258,7 +267,9 @@
         document.getElementById('prod-title').value = product.title;
         document.getElementById('prod-desc').value = product.description || '';
         document.getElementById('prod-price').value = product.price;
+        document.getElementById('prod-sale-price').value = product.sale_price || 0;
         document.getElementById('prod-price-inr').value = product.price_inr || 0;
+        document.getElementById('prod-sale-price-inr').value = product.sale_price_inr || 0;
         
         const fileInput = document.getElementById('prod-image');
         fileInput.value = ''; 
@@ -282,6 +293,14 @@
         document.getElementById('prod-active').value = product.is_active !== false ? 'true' : 'false';
         document.getElementById('prod-catalog').value = product.catalog_id || '';
         document.getElementById('prod-show-low-stock').checked = product.show_low_stock_label === true;
+
+        const sizeChartNote = document.getElementById('prod-size-chart-note');
+        if (sizeChartNote) {
+            sizeChartNote.dataset.url = product.size_chart_url || '';
+            sizeChartNote.textContent = product.size_chart_url
+                ? 'A size chart is already set. Upload a new one to replace it.'
+                : '';
+        }
 
         document.getElementById('product-modal-title').textContent = 'Edit Product';
         loadCatalogs();
@@ -336,6 +355,7 @@
         if (fileInput.files.length > 0) {
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
+            formData.append('upload_type', 'product');
             
             try {
                 const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -368,6 +388,7 @@
             for (let i = 0; i < otherFileInput.files.length; i++) {
                 const formData = new FormData();
                 formData.append('file', otherFileInput.files[i]);
+                formData.append('upload_type', 'product');
                 try {
                     const uploadRes = await fetch('/api/upload', {
                         method: 'POST',
@@ -386,13 +407,44 @@
             }
         }
 
+        let finalSizeChartUrl = '';
+        const sizeChartInput = document.getElementById('prod-size-chart');
+        const sizeChartNote = document.getElementById('prod-size-chart-note');
+        if (sizeChartNote && sizeChartNote.dataset.url) {
+            finalSizeChartUrl = sizeChartNote.dataset.url;
+        }
+        if (sizeChartInput && sizeChartInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', sizeChartInput.files[0]);
+            formData.append('upload_type', 'size_chart');
+            try {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                finalSizeChartUrl = uploadData.url;
+            } catch (err) {
+                showToast(`Size chart upload error: ${err.message}`, 'error');
+                btn.textContent = originalText;
+                btn.disabled = false;
+                return;
+            }
+        }
+
         const data = {
             title: document.getElementById('prod-title').value,
             description: document.getElementById('prod-desc').value,
             price: parseFloat(document.getElementById('prod-price').value),
+            sale_price: parseFloat(document.getElementById('prod-sale-price').value || 0),
             price_inr: parseFloat(document.getElementById('prod-price-inr').value),
+            sale_price_inr: parseFloat(document.getElementById('prod-sale-price-inr').value || 0),
             show_low_stock_label: document.getElementById('prod-show-low-stock').checked,
             image_url: finalImageUrl,
+            size_chart_url: finalSizeChartUrl || null,
             images: finalOtherImages,
             sizes: sizesStr ? sizesStr.split(',').map(s => s.trim()).filter(Boolean) : [],
             stock: parseInt(document.getElementById('prod-stock').value, 10),
@@ -466,49 +518,56 @@
         tbody.innerHTML = '';
 
         if (!filtered || filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-icon">🧾</div><p>No orders yet.</p></td></tr>';
-                return;
-            }
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-icon">Orders</div><p>No orders yet.</p></td></tr>';
+            return;
+        }
 
-            filtered.forEach(o => {
-                const customerName = o.full_name || 'Customer';
-                const instagram = o.instagram_username ? `@${o.instagram_username}` : '—';
+        filtered.forEach(o => {
+            const customerName = o.full_name || 'Customer';
+            const instagram = o.instagram_username ? `@${o.instagram_username}` : '—';
+            const remarks = (o.admin_remarks || '').trim();
+            const remarksDisplay = remarks ? escapeHtml(remarks) : '<span style="color:var(--text-muted);">—</span>';
+            const amountDisplay = Number.isFinite(o.admin_amount)
+                ? `Rs. ${parseFloat(o.admin_amount).toFixed(2)}`
+                : '<span style="color:var(--text-muted);">—</span>';
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-family:monospace;font-size:var(--font-size-xs);">${o.order_number || o.id.substring(0, 4)}</td>
-                    <td>
-                        <strong>${escapeHtml(customerName)}</strong><br>
-                        <small style="color:var(--text-muted);">${escapeHtml(instagram)}</small>
-                    </td>
-                    <td style="font-size: 0.85rem;">
-                        ${o.contact_number ? `📞 ${escapeHtml(o.contact_number)}<br>` : ''}
-                        ${o.country ? `${escapeHtml(o.country)}<br>` : ''}
-                        ${o.country === 'Nepal' ? `${escapeHtml(o.district || '')}, ${escapeHtml(o.province || '')}<br>` : ''}
-                        ${o.country === 'India' ? `${escapeHtml(o.state || '')} ${escapeHtml(o.zipcode || '')}<br>` : ''}
-                        ${escapeHtml(o.shipping_address)}
-                    </td>
-                    <td>
-                        <strong>Rs. ${parseFloat(o.total_amount).toFixed(2)}</strong><br>
-                        <small style="color:var(--text-muted);">${o.payment_method || 'COD'}</small>
-                    </td>
-                    <td><span class="status-badge ${o.status}">${o.status}</span></td>
-                    <td onclick="event.stopPropagation();">
-                        <div style="display:flex; flex-direction: column; gap: 6px;">
-                            <button class="btn btn-secondary btn-sm" onclick="openOrderDetail('${o.id}')">View Details</button>
-                            <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
-                            <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
-                            <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>Processing</option>
-                            <option value="packed" ${o.status === 'packed' ? 'selected' : ' '}>Packed</option>
-                                    <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Shipped</option>
-                            <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered</option>
-                            <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                            </select>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-family:monospace;font-size:var(--font-size-xs);">${o.order_number || o.id.substring(0, 4)}</td>
+                <td>
+                    <strong>${escapeHtml(customerName)}</strong><br>
+                    <small style="color:var(--text-muted);">${escapeHtml(instagram)}</small>
+                </td>
+                <td style="font-size: 0.85rem;">
+                    ${o.contact_number ? `Tel: ${escapeHtml(o.contact_number)}<br>` : ''}
+                    ${o.country ? `${escapeHtml(o.country)}<br>` : ''}
+                    ${o.country === 'Nepal' ? `${escapeHtml(o.district || '')}, ${escapeHtml(o.province || '')}<br>` : ''}
+                    ${o.country === 'India' ? `${escapeHtml(o.state || '')} ${escapeHtml(o.zipcode || '')}<br>` : ''}
+                    ${escapeHtml(o.shipping_address)}
+                </td>
+                <td>
+                    <strong>Rs. ${parseFloat(o.total_amount).toFixed(2)}</strong><br>
+                    <small style="color:var(--text-muted);">${o.payment_method || 'COD'}</small>
+                </td>
+                <td style="font-size: var(--font-size-sm);">${remarksDisplay}</td>
+                <td style="font-weight: 600;">${amountDisplay}</td>
+                <td><span class="status-badge ${o.status}">${o.status}</span></td>
+                <td onclick="event.stopPropagation();">
+                    <div style="display:flex; flex-direction: column; gap: 6px;">
+                        <button class="btn btn-secondary btn-sm" onclick="openOrderDetail('${o.id}')">View Details</button>
+                        <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
+                        <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>Processing</option>
+                        <option value="packed" ${o.status === 'packed' ? 'selected' : ' '}>Packed</option>
+                                <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Shipped</option>
+                        <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                        <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 
     window.openOrderDetail = async function (orderId) {
@@ -560,10 +619,33 @@
                     </div>
                     <div>
                         <strong>Payment:</strong> ${escapeHtml(order.payment_method || 'COD')}
-                        ${order.payment_receipt_url ? `<div><a href="${order.payment_receipt_url}" target="_blank" rel="noopener">View receipt</a></div>` : ''}
+                        ${order.payment_receipt_url ? `<div><a href="${order.payment_receipt_url}" target="_blank" rel="noopener">Open receipt</a></div>` : ''}
                     </div>
+                    ${order.payment_receipt_url ? `
+                        <div>
+                            <strong>Receipt</strong>
+                            <div style="margin-top: 6px;">
+                                <a href="${order.payment_receipt_url}" target="_blank" rel="noopener">
+                                    <img src="${order.payment_receipt_url}" alt="Payment receipt" style="width: 100%; max-width: 520px; border-radius: 10px; border: 1px solid var(--border);" onerror="this.style.display='none';">
+                                </a>
+                            </div>
+                        </div>
+                    ` : ''}
                     <div>
                         <strong>Status:</strong> ${escapeHtml(order.status || 'pending')}
+                    </div>
+                    <div style="display:grid; gap: 10px;">
+                        <div>
+                            <label for="order-remarks-input" style="display:block; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: 6px;">Remarks</label>
+                            <textarea id="order-remarks-input" class="form-input" style="width:100%; min-height: 90px; resize: vertical;">${escapeHtml(order.admin_remarks || '')}</textarea>
+                        </div>
+                        <div>
+                            <label for="order-amount-input" style="display:block; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: 6px;">Amount</label>
+                            <input id="order-amount-input" type="number" step="0.01" min="0" class="form-input" value="${order.admin_amount ?? ''}" placeholder="Rs. 0.00">
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-sm" onclick="updateOrderMeta('${order.id}')">Save Remarks & Amount</button>
+                        </div>
                     </div>
                     <div>
                         <strong>Items</strong>
@@ -576,6 +658,33 @@
             `;
         } catch (err) {
             body.innerHTML = `<p style="color:var(--error)">Failed to load details: ${escapeHtml(err.message)}</p>`;
+        }
+    };
+
+    window.updateOrderMeta = async function (orderId) {
+        const remarksEl = document.getElementById('order-remarks-input');
+        const amountEl = document.getElementById('order-amount-input');
+        const remarks = remarksEl ? remarksEl.value.trim() : '';
+        const amountRaw = amountEl ? amountEl.value : '';
+
+        let adminAmount = null;
+        if (amountRaw !== '') {
+            adminAmount = parseFloat(amountRaw);
+            if (Number.isNaN(adminAmount)) {
+                showToast('Amount must be a valid number.', 'error');
+                return;
+            }
+        }
+
+        try {
+            await adminApi(`/api/admin/orders/${orderId}`, 'PUT', {
+                admin_remarks: remarks,
+                admin_amount: adminAmount
+            });
+            showToast('Remarks and amount updated.', 'success');
+            loadOrders();
+        } catch (err) {
+            showToast(`An unknown error occurred while saving: ${err.message}`, 'error');
         }
     };
 
@@ -791,6 +900,60 @@
         select.innerHTML = options.join('');
         if (currentValue) select.value = currentValue;
     }
+
+    // ===========================
+    // REVIEWS
+    // ===========================
+
+    async function loadReviews() {
+        const tbody = document.getElementById('admin-review-list');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Loading...</td></tr>';
+
+        try {
+            const data = await adminApi('/api/admin/reviews');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No reviews found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(r => {
+                const productTitle = r.products?.title || 'Unknown product';
+                const createdAt = r.created_at ? new Date(r.created_at).toLocaleString() : '—';
+                const rating = Number.isFinite(r.rating) ? `${r.rating}/5` : '—';
+                return `
+                    <tr>
+                        <td>${escapeHtml(createdAt)}</td>
+                        <td><strong>${escapeHtml(productTitle)}</strong></td>
+                        <td>${escapeHtml(rating)}</td>
+                        <td style="max-width: 360px;">
+                            <div style="white-space: normal; word-break: break-word;">
+                                ${escapeHtml(r.review_text || '')}
+                            </div>
+                        </td>
+                        <td style="font-family: monospace; font-size: var(--font-size-xs);">${escapeHtml(r.session_id || '—')}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="color:var(--error)">Error loading reviews.</td></tr>';
+        }
+    }
+
+    window.deleteReview = async function(reviewId) {
+        if (!confirm('Are you sure you want to delete this review?')) return;
+
+        try {
+            await adminApi(`/api/admin/reviews/${reviewId}`, 'DELETE');
+            showToast('Review deleted.', 'success');
+            loadReviews();
+        } catch (err) {
+            showToast(`An unknown error occurred while deleting: ${err.message}`, 'error');
+        }
+    };
 
 })();
 
