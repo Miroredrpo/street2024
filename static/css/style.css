@@ -742,17 +742,42 @@ img {
     transform-origin: top right;
 }
 
-.pdp-size-chart::before {
-    content: '';
+.size-chart-pin {
     position: absolute;
     top: -8px;
     right: 14px;
     width: 14px;
     height: 14px;
-    background: var(--accent);
+    background: #fff;
     border-radius: 50%;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    cursor: default;
+}
+
+.size-chart-egg {
+    position: absolute;
+    top: -44px;
+    right: 8px;
+    background: var(--bg-primary);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease;
+    transition-delay: 0s;
+}
+
+.size-chart-pin:hover + .size-chart-egg {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 8s;
 }
 
 .pdp-size-chart-label {
