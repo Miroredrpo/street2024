@@ -70,6 +70,25 @@ CREATE TABLE IF NOT EXISTS public.products (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Shipping Rates Table
+CREATE TABLE IF NOT EXISTS public.shipping_rates (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  country TEXT NOT NULL,
+  zone TEXT NOT NULL,
+  label TEXT,
+  cost_npr DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  cost_inr DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(country, zone)
+);
+
+ALTER TABLE public.shipping_rates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Shipping rates are viewable by everyone." ON public.shipping_rates FOR SELECT USING (true);
+CREATE POLICY "Shipping rates are modifiable by admins." ON public.shipping_rates FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
 -- Orders Table
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -94,6 +113,11 @@ CREATE TABLE IF NOT EXISTS public.orders (
   province TEXT,
   district TEXT,
   city TEXT,
+  shipping_zone TEXT,
+  shipping_rate_id UUID REFERENCES public.shipping_rates(id) ON DELETE SET NULL,
+  shipping_cost_npr DECIMAL(10, 2) DEFAULT 0.00,
+  shipping_cost_inr DECIMAL(10, 2) DEFAULT 0.00,
+  currency TEXT DEFAULT 'NPR'::text,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -268,6 +292,36 @@ BEGIN
 
     BEGIN
       ALTER TABLE public.orders ADD COLUMN admin_amount DECIMAL(10, 2);
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN shipping_zone TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN shipping_rate_id UUID REFERENCES public.shipping_rates(id) ON DELETE SET NULL;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN shipping_cost_npr DECIMAL(10, 2) DEFAULT 0.00;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN shipping_cost_inr DECIMAL(10, 2) DEFAULT 0.00;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.orders ADD COLUMN currency TEXT DEFAULT 'NPR'::text;
     EXCEPTION
       WHEN duplicate_column THEN null;
     END;

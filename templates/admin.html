@@ -77,6 +77,12 @@
                     </span>
                     Coupons
                 </button>
+                <button class="admin-nav-item" data-tab="shipping" onclick="switchAdminTab('shipping')">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h13v10H3z"/><path d="M16 10h3l2 2v5h-5z"/><circle cx="7" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>
+                    </span>
+                    Shipping
+                </button>
             </nav>
 
             <div class="admin-sidebar-footer">
@@ -327,6 +333,59 @@
                                     <tr><td colspan="5" class="empty-state"><p>Loading coupons...</p></td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== SHIPPING TAB ===== -->
+                <section id="tab-shipping" class="admin-tab" style="display:none;">
+                    <div class="data-table-wrapper">
+                        <div class="data-table-header">
+                            <h3>Shipping Rates</h3>
+                            <button class="btn btn-primary btn-sm" onclick="saveShippingRates()">Save Rates</button>
+                        </div>
+                        <div style="padding: 1rem; display: grid; gap: 1rem;">
+                            <div style="border: 1px solid var(--border); border-radius: 12px; padding: 1rem;">
+                                <h4 style="margin: 0 0 0.75rem;">Nepal — Inside Valley</h4>
+                                <div style="display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                                    <div>
+                                        <label for="shipping-np-inside-npr">Cost (NPR)</label>
+                                        <input id="shipping-np-inside-npr" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                    <div>
+                                        <label for="shipping-np-inside-inr">Cost (INR)</label>
+                                        <input id="shipping-np-inside-inr" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="border: 1px solid var(--border); border-radius: 12px; padding: 1rem;">
+                                <h4 style="margin: 0 0 0.75rem;">Nepal — Outside Valley</h4>
+                                <div style="display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                                    <div>
+                                        <label for="shipping-np-outside-npr">Cost (NPR)</label>
+                                        <input id="shipping-np-outside-npr" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                    <div>
+                                        <label for="shipping-np-outside-inr">Cost (INR)</label>
+                                        <input id="shipping-np-outside-inr" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="border: 1px solid var(--border); border-radius: 12px; padding: 1rem;">
+                                <h4 style="margin: 0 0 0.75rem;">India — Flat Rate</h4>
+                                <div style="display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                                    <div>
+                                        <label for="shipping-in-flat-npr">Cost (NPR)</label>
+                                        <input id="shipping-in-flat-npr" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                    <div>
+                                        <label for="shipping-in-flat-inr">Cost (INR)</label>
+                                        <input id="shipping-in-flat-inr" class="form-input" type="number" step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

@@ -155,6 +155,18 @@
         <div id="nepal-fields" style="display: none;">
             <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
                 <div style="flex: 1;">
+                    <label for="nepal-zone">Delivery Area</label>
+                    <select id="nepal-zone" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                        <option value="">Select area</option>
+                        <option value="inside_valley">Inside Valley</option>
+                        <option value="outside_valley">Outside Valley</option>
+                    </select>
+                </div>
+                <div style="flex: 1;"></div>
+            </div>
+
+            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
+                <div style="flex: 1;">
                     <label for="province">Province</label>
                     <select id="province" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
                         <option value="">Select Province</option>
@@ -173,13 +185,6 @@
                 </div>
             </div>
 
-            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
-                <div style="flex: 1;">
-                    <label for="shipping-address">Location / Delivery Address</label>
-                    <input type="text" id="shipping-address" placeholder="e.g. New Road, Ward 22" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-                </div>
-                <div style="flex: 1;"></div>
-            </div>
         </div>
 
         <div id="india-fields" style="display: none;">
@@ -195,6 +200,14 @@
             </div>
         </div>
 
+        <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
+            <div style="flex: 1;">
+                <label for="shipping-address">Location / Delivery Address</label>
+                <input type="text" id="shipping-address" placeholder="e.g. New Road, Ward 22" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+            </div>
+            <div style="flex: 1;"></div>
+        </div>
+
 
         <div class="form-group" style="margin-top: 1rem;">
             <label for="custom-message">Custom Message (Optional)</label>
@@ -202,13 +215,10 @@
         </div>
         
         <div style="margin-top: 2rem;">
-            <h3>Payment Method</h3>
+            <h3>Delivary Charge</h3>
             <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
                 <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    <input type="radio" name="payment_method" value="cash_on_delivery" checked onchange="togglePayment()"> Cash on Delivery (COD)
-                </label>
-                <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    <input type="radio" name="payment_method" value="online" onchange="togglePayment()"> Online Banking
+                    <input type="radio" name="payment_method" value="online" checked onchange="togglePayment()"> Online Banking
                 </label>
                 <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                     <input type="radio" name="payment_method" value="esewa" onchange="togglePayment()"> eSewa
@@ -276,6 +286,11 @@
             <span>Discount (<span id="discount-percent"></span>%)</span>
             <span id="discount-amount">-Rs. 0</span>
         </div>
+
+        <div id="shipping-row" class="order-summary-item" style="display: none;">
+            <span>Shipping</span>
+            <span id="shipping-amount">Rs. 0</span>
+        </div>
         
         <div class="total-row">
             <span>Total to pay</span>
@@ -289,6 +304,8 @@
     let checkoutCartItems = [];
     let checkoutTotal = 0;
     let appliedCoupon = null;
+    let shippingRates = [];
+    let selectedShipping = { id: null, country: '', zone: '', costNpr: 0, costInr: 0 };
 
     document.addEventListener('DOMContentLoaded', async () => {
         // Wait briefly for store.js auth to init if needed, though this page requires login.
@@ -306,6 +323,17 @@
             countrySelect.addEventListener('change', handleCountryChange);
             handleCountryChange();
         }
+
+        if (document.querySelector('input[name="payment_method"]')) {
+            togglePayment();
+        }
+
+        const nepalZoneSelect = document.getElementById('nepal-zone');
+        if (nepalZoneSelect) {
+            nepalZoneSelect.addEventListener('change', updateShippingSelection);
+        }
+
+        loadShippingRates();
     });
 
     function handleCountryChange() {
@@ -317,15 +345,20 @@
         const address = document.getElementById('shipping-address');
         const state = document.getElementById('state');
         const zipcode = document.getElementById('zipcode');
+        const nepalZone = document.getElementById('nepal-zone');
 
         if (country === 'India') {
             if (nepalFields) nepalFields.style.display = 'none';
             if (indiaFields) indiaFields.style.display = 'block';
             if (province) province.required = false;
             if (district) district.required = false;
-            if (address) address.required = false;
+            if (address) address.required = true;
             if (state) state.required = true;
             if (zipcode) zipcode.required = true;
+            if (nepalZone) {
+                nepalZone.required = false;
+                nepalZone.value = '';
+            }
         } else if (country === 'Nepal') {
             if (nepalFields) nepalFields.style.display = 'block';
             if (indiaFields) indiaFields.style.display = 'none';
@@ -334,6 +367,7 @@
             if (address) address.required = true;
             if (state) state.required = false;
             if (zipcode) zipcode.required = false;
+            if (nepalZone) nepalZone.required = true;
         } else {
             if (nepalFields) nepalFields.style.display = 'none';
             if (indiaFields) indiaFields.style.display = 'none';
@@ -342,7 +376,13 @@
             if (address) address.required = false;
             if (state) state.required = false;
             if (zipcode) zipcode.required = false;
+            if (nepalZone) {
+                nepalZone.required = false;
+                nepalZone.value = '';
+            }
         }
+
+        updateShippingSelection();
     }
 
     async function loadCheckoutData() {
@@ -409,6 +449,49 @@
         startCheckoutTimers();
     }
 
+    async function loadShippingRates() {
+        try {
+            const res = await fetch('/api/shipping-rates');
+            const data = await res.json();
+            if (res.ok) {
+                shippingRates = Array.isArray(data) ? data : [];
+            } else {
+                shippingRates = [];
+            }
+        } catch (e) {
+            shippingRates = [];
+        } finally {
+            updateShippingSelection();
+        }
+    }
+
+    function getShippingRate(country, zone) {
+        return shippingRates.find(rate => rate.country === country && rate.zone === zone && rate.is_active !== false) || null;
+    }
+
+    function updateShippingSelection() {
+        const country = document.getElementById('country').value;
+        const nepalZone = document.getElementById('nepal-zone');
+        let zone = '';
+
+        if (country === 'Nepal') {
+            zone = nepalZone ? nepalZone.value : '';
+        } else if (country === 'India') {
+            zone = 'flat';
+        }
+
+        const rate = country && zone ? getShippingRate(country, zone) : null;
+        selectedShipping = {
+            id: rate ? rate.id : null,
+            country: country || '',
+            zone: zone || '',
+            costNpr: rate ? parseFloat(rate.cost_npr || 0) : 0,
+            costInr: rate ? parseFloat(rate.cost_inr || 0) : 0
+        };
+
+        updateCheckoutTotalDisplay();
+    }
+
     let checkoutTimerInterval = null;
 
     function startCheckoutTimers() {
@@ -455,6 +538,7 @@
 
     function updateCheckoutTotalDisplay() {
         let finalAmount = checkoutTotal;
+        const shippingAmount = getShippingAmount();
         if (appliedCoupon) {
             const discountAmt = checkoutTotal * (appliedCoupon.discount_percentage / 100);
             finalAmount -= discountAmt;
@@ -465,11 +549,34 @@
             document.getElementById('discount-row').style.display = 'none';
         }
 
+        if (shouldShowShipping()) {
+            document.getElementById('shipping-row').style.display = 'flex';
+            document.getElementById('shipping-amount').textContent = formatAmount(shippingAmount);
+            finalAmount += shippingAmount;
+        } else {
+            document.getElementById('shipping-row').style.display = 'none';
+        }
+
         document.getElementById('checkout-total').textContent = formatAmount(finalAmount);
     }
 
     function getCurrencyPreference() {
         return localStorage.getItem('preferred_currency') || 'NPR';
+    }
+
+    function getShippingAmount() {
+        const currency = getCurrencyPreference();
+        return currency === 'INR' ? selectedShipping.costInr : selectedShipping.costNpr;
+    }
+
+    function shouldShowShipping() {
+        const country = document.getElementById('country').value;
+        if (!country) return false;
+        if (country === 'Nepal') {
+            const nepalZone = document.getElementById('nepal-zone');
+            return !!(nepalZone && nepalZone.value);
+        }
+        return country === 'India';
     }
 
     function getUnitPrice(product) {
@@ -554,6 +661,7 @@
         const customMessage = document.getElementById('custom-message') ? document.getElementById('custom-message').value.trim() : '';
         const province = document.getElementById('province').value;
         const district = document.getElementById('district').value.trim();
+        const nepalZone = document.getElementById('nepal-zone') ? document.getElementById('nepal-zone').value : '';
         
         const instagramUsername = instagramRaw.replace(/@/g, '');
 
@@ -564,6 +672,11 @@
 
         if (country === 'Nepal' && (!province || !district)) {
             alert('Please fill out province and district for Nepal orders');
+            return;
+        }
+
+        if (country === 'Nepal' && !nepalZone) {
+            alert('Please choose inside or outside valley for Nepal delivery');
             return;
         }
 
@@ -643,6 +756,9 @@
                 custom_message: customMessage,
                 province: province,
                 district: district,
+                shipping_zone: country === 'India' ? 'flat' : nepalZone,
+                shipping_rate_id: selectedShipping.id,
+                currency: getCurrencyPreference(),
                 payment_method: paymentMethodStr,
                 payment_receipt_url: paymentReceiptUrl
             };

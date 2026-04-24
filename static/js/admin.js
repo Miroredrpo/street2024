@@ -127,7 +127,7 @@
         if (targetTab) targetTab.style.display = 'block';
 
         // Update page title
-        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', catalogs: 'Catalogs', coupons: 'Coupons', reviews: 'Reviews' };
+        const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', catalogs: 'Catalogs', coupons: 'Coupons', reviews: 'Reviews', shipping: 'Shipping' };
         document.getElementById('admin-page-title').textContent = titles[tab] || 'Dashboard';
 
         // Close mobile sidebar if open
@@ -146,6 +146,7 @@
         if (tab === 'coupons') loadCoupons();
         if (tab === 'catalogs') loadCatalogs();
         if (tab === 'reviews') loadReviews();
+        if (tab === 'shipping') loadShippingRates();
 
         // Close mobile sidebar
         document.getElementById('admin-sidebar').classList.remove('open');
@@ -913,6 +914,74 @@
             alert('Error deleting coupon: ' + e.message);
         }
     };
+
+    // ===========================
+    // SHIPPING RATES
+    // ===========================
+
+    async function loadShippingRates() {
+        try {
+            const rates = await adminApi('/api/admin/shipping-rates');
+            const map = new Map();
+            (rates || []).forEach(rate => {
+                map.set(`${rate.country}:${rate.zone}`, rate);
+            });
+
+            setShippingInput('shipping-np-inside-npr', map, 'Nepal', 'inside_valley', 'cost_npr');
+            setShippingInput('shipping-np-inside-inr', map, 'Nepal', 'inside_valley', 'cost_inr');
+            setShippingInput('shipping-np-outside-npr', map, 'Nepal', 'outside_valley', 'cost_npr');
+            setShippingInput('shipping-np-outside-inr', map, 'Nepal', 'outside_valley', 'cost_inr');
+            setShippingInput('shipping-in-flat-npr', map, 'India', 'flat', 'cost_npr');
+            setShippingInput('shipping-in-flat-inr', map, 'India', 'flat', 'cost_inr');
+        } catch (err) {
+            showToast(`Error loading shipping rates: ${err.message}`, 'error');
+        }
+    }
+
+    function setShippingInput(id, map, country, zone, field) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        const rate = map.get(`${country}:${zone}`);
+        input.value = rate && rate[field] !== null && rate[field] !== undefined ? rate[field] : 0;
+    }
+
+    window.saveShippingRates = async function () {
+        const rates = [
+            buildRate('Nepal', 'inside_valley', 'Nepal — Inside Valley', 'shipping-np-inside-npr', 'shipping-np-inside-inr'),
+            buildRate('Nepal', 'outside_valley', 'Nepal — Outside Valley', 'shipping-np-outside-npr', 'shipping-np-outside-inr'),
+            buildRate('India', 'flat', 'India — Flat Rate', 'shipping-in-flat-npr', 'shipping-in-flat-inr')
+        ];
+
+        if (rates.some(rate => !rate)) {
+            showToast('Please fill out all shipping costs with valid numbers.', 'error');
+            return;
+        }
+
+        try {
+            await adminApi('/api/admin/shipping-rates', 'POST', { rates });
+            showToast('Shipping rates saved.', 'success');
+            loadShippingRates();
+        } catch (err) {
+            showToast(`Error saving shipping rates: ${err.message}`, 'error');
+        }
+    };
+
+    function buildRate(country, zone, label, nprId, inrId) {
+        const nprInput = document.getElementById(nprId);
+        const inrInput = document.getElementById(inrId);
+        if (!nprInput || !inrInput) return null;
+        const costNpr = parseFloat(nprInput.value);
+        const costInr = parseFloat(inrInput.value);
+        if (Number.isNaN(costNpr) || Number.isNaN(costInr)) return null;
+        return {
+            country,
+            zone,
+            label,
+            cost_npr: costNpr,
+            cost_inr: costInr,
+            is_active: true
+        };
+    }
 
     // ===========================
     // CATALOGS

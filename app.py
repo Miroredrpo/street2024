@@ -285,6 +285,19 @@ def get_customer_feedback():
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
 
+@app.route("/api/shipping-rates", methods=["GET"])
+def get_shipping_rates():
+    country = request.args.get("country")
+    try:
+        query = supabase_admin.table("shipping_rates").select("*").eq("is_active", True)
+        if country:
+            query = query.eq("country", country)
+        res = query.order("country", desc=False).order("zone", desc=False).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
 # ---------------------
 # Protected API — Cart
 # ---------------------
@@ -478,6 +491,9 @@ def place_order():
     contact_number = data.get("contact_number")
     province = data.get("province")
     district = data.get("district")
+    shipping_zone = data.get("shipping_zone")
+    shipping_rate_id = data.get("shipping_rate_id")
+    currency = data.get("currency") or "NPR"
     coupon_code = data.get("coupon_code")
     payment_method = data.get("payment_method", "cash_on_delivery")
     payment_receipt_url = data.get("payment_receipt_url")
@@ -502,8 +518,14 @@ def place_order():
     if country == "Nepal" and (not province or not district):
         return jsonify({"error": "Province and district are required for Nepal"}), 400
 
+    if country == "Nepal" and not shipping_zone:
+        return jsonify({"error": "Delivery area is required for Nepal"}), 400
+
     if country == "India" and (not state or not zipcode):
         return jsonify({"error": "State and zip code are required for India"}), 400
+
+    if country == "India" and not shipping_zone:
+        shipping_zone = "flat"
         
     if not contact_number or not contact_number.isdigit() or len(contact_number) != 10:
         return jsonify({"error": "Please input a valid 10-digit phone number"}), 400
@@ -529,9 +551,36 @@ def place_order():
                 
         if discount_percentage > 0:
             total_amount = total_amount * (100 - discount_percentage) / 100.0
+
+        shipping_cost_npr = 0.0
+        shipping_cost_inr = 0.0
+        shipping_rate_record = None
+
+        if shipping_rate_id:
+            rate_res = supabase_admin.table("shipping_rates").select("*").eq("id", shipping_rate_id).single().execute()
+            shipping_rate_record = rate_res.data
+        elif shipping_zone:
+            rate_res = supabase_admin.table("shipping_rates").select("*") \
+                .eq("country", country) \
+                .eq("zone", shipping_zone) \
+                .eq("is_active", True) \
+                .single().execute()
+            shipping_rate_record = rate_res.data
+
+        if shipping_rate_record:
+            try:
+                shipping_cost_npr = float(shipping_rate_record.get("cost_npr") or 0)
+                shipping_cost_inr = float(shipping_rate_record.get("cost_inr") or 0)
+            except (TypeError, ValueError):
+                shipping_cost_npr = 0.0
+                shipping_cost_inr = 0.0
+
+        total_amount = total_amount + shipping_cost_npr
             
         order_number = f"ORD-{str(uuid.uuid4())[:8].upper()}"
         
+        shipping_rate_id_value = shipping_rate_record.get("id") if shipping_rate_record else None
+
         order_data = {
             "session_id": session_id,
             "full_name": full_name,
@@ -548,6 +597,11 @@ def place_order():
             "custom_message": custom_message,
             "province": province,
             "district": district,
+            "shipping_zone": shipping_zone,
+            "shipping_rate_id": shipping_rate_id_value,
+            "shipping_cost_npr": shipping_cost_npr,
+            "shipping_cost_inr": shipping_cost_inr,
+            "currency": currency,
             "payment_method": payment_method,
             "payment_receipt_url": payment_receipt_url
         }
@@ -632,6 +686,66 @@ def cancel_user_order(order_id):
 # ---------------------
 # Admin API — Protected & Role Restricted
 # ---------------------
+
+@app.route("/api/admin/shipping-rates", methods=["GET"])
+def admin_get_shipping_rates():
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        res = supabase_admin.table("shipping_rates").select("*").order("country", desc=False).order("zone", desc=False).execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/admin/shipping-rates", methods=["POST"])
+def admin_upsert_shipping_rates():
+    user = get_user_from_token(request)
+    if not user or not is_admin(user.id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    payload = request.json or {}
+    rates = payload.get("rates") if isinstance(payload, dict) else None
+    if not isinstance(rates, list) or not rates:
+        return jsonify({"error": "Rates list is required"}), 400
+
+    clean_rates = []
+    for rate in rates:
+        if not isinstance(rate, dict):
+            continue
+        country = (rate.get("country") or "").strip()
+        zone = (rate.get("zone") or "").strip()
+        label = (rate.get("label") or "").strip() or None
+        if not country or not zone:
+            continue
+        try:
+            cost_npr = float(rate.get("cost_npr") or 0)
+            cost_inr = float(rate.get("cost_inr") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Shipping costs must be numeric"}), 400
+
+        clean_rates.append({
+            "country": country,
+            "zone": zone,
+            "label": label,
+            "cost_npr": cost_npr,
+            "cost_inr": cost_inr,
+            "is_active": rate.get("is_active", True)
+        })
+
+    if not clean_rates:
+        return jsonify({"error": "No valid rates provided"}), 400
+
+    try:
+        res = supabase_admin.table("shipping_rates").upsert(clean_rates, on_conflict="country,zone").execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        error_str = str(e)
+        if "PGRST204" in error_str:
+            return jsonify({"error": "Schema cache is stale or migration not applied. Please run the migration.sql in Supabase, then go to Supabase Dashboard -> Project Settings -> API -> Reload schema cache."}), 500
+        return jsonify({"error": f"An unknown error occurred: {error_str}"}), 500
 
 @app.route("/api/admin/stats", methods=["GET"])
 def admin_stats():
