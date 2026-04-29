@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin</title>
 
-    <!-- Google Fonts: Inter -->
+    <!-- fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
-    <!-- Stylesheets -->
+    <!-- styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v=2">
 
-    <!-- Supabase -->
+    <!-- supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = "{{ config['SUPABASE_URL'] }}";
@@ -30,10 +30,10 @@
 </head>
 <body>
 
-    <!-- ========== ADMIN DASHBOARD ========== -->
+    <!-- admin -->
     <div id="admin-app" class="admin-wrapper" style="display:none;">
 
-        <!-- Sidebar -->
+        <!-- sidebar -->
         <aside class="admin-sidebar" id="admin-sidebar">
             <div class="admin-sidebar-header">
                 <h2>street2024customize</h2>
@@ -96,10 +96,10 @@
             </div>
         </aside>
 
-        <!-- Mobile Sidebar Overlay -->
+        <!-- sidebar overlay -->
         <div class="admin-sidebar-overlay" id="sidebar-overlay" onclick="toggleAdminSidebar()"></div>
 
-        <!-- Main Content -->
+        <!-- main -->
         <main class="admin-main">
             <div class="admin-topbar">
                 <div class="admin-topbar-left">
@@ -115,7 +115,7 @@
 
             <div class="admin-content">
 
-                <!-- ===== DASHBOARD TAB ===== -->
+                <!-- dashboard -->
                 <section id="tab-dashboard" class="admin-tab">
                     <div class="stats-grid" id="stats-grid">
                         <div class="stat-card">
@@ -196,7 +196,7 @@
                     </div>
                 </section>
 
-                <!-- ===== PRODUCTS TAB ===== -->
+                <!-- products -->
                 <section id="tab-products" class="admin-tab" style="display:none;">
                     <div class="data-table-wrapper">
                         <div class="data-table-header">
@@ -223,7 +223,7 @@
                     </div>
                 </section>
 
-                <!-- ===== ORDERS TAB ===== -->
+                <!-- orders -->
                 <section id="tab-orders" class="admin-tab" style="display:none;">
                     <div class="data-table-wrapper">
                         <div class="data-table-header responsive-header">
@@ -252,7 +252,7 @@
                     </div>
                 </section>
 
-                <!-- ===== REVIEWS TAB ===== -->
+                <!-- reviews -->
                 <section id="tab-reviews" class="admin-tab" style="display:none;">
                     <div class="data-table-wrapper">
                         <div class="data-table-header">
@@ -278,7 +278,7 @@
                     </div>
                 </section>
 
-                <!-- ===== CATALOGS TAB ===== -->
+                <!-- catalogs -->
                 <section id="tab-catalogs" class="admin-tab" style="display:none;">
                     <div class="data-table-wrapper">
                         <div class="data-table-header">
@@ -307,7 +307,7 @@
                     </div>
                 </section>
 
-                <!-- ===== COUPONS TAB ===== -->
+                <!-- coupons -->
                 <section id="tab-coupons" class="admin-tab" style="display:none;">
                     <div class="data-table-wrapper">
                         <div class="data-table-header">
@@ -337,7 +337,7 @@
                     </div>
                 </section>
 
-                <!-- ===== SHIPPING TAB ===== -->
+                <!-- shipping -->
                 <section id="tab-shipping" class="admin-tab" style="display:none;">
                     <div class="data-table-wrapper">
                         <div class="data-table-header">
@@ -394,7 +394,7 @@
         </main>
     </div>
 
-    <!-- ========== PRODUCT MODAL ========== -->
+    <!-- product modal -->
     <div id="product-modal-overlay" class="admin-modal-overlay" onclick="closeProductModal()"></div>
     <div id="product-modal" class="admin-modal">
         <div class="admin-modal-header">
@@ -491,10 +491,10 @@
         </form>
     </div>
 
-    <!-- ========== TOAST CONTAINER ========== -->
+    <!-- toasts -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- ========== ORDER DETAIL MODAL ========== -->
+    <!-- order modal -->
     <div id="order-detail-overlay" class="admin-modal-overlay" onclick="closeOrderDetail()"></div>
     <div id="order-detail-modal" class="admin-modal" aria-hidden="true">
         <div class="admin-modal-header">
@@ -506,7 +506,7 @@
         </div>
     </div>
 
-    <!-- ========== SCRIPTS ========== -->
+    <!-- scripts -->
     <script src="{{ url_for('static', filename='js/api.js') }}?v={{ range(1, 99999) | random }}" defer></script>
     <script src="{{ url_for('static', filename='js/admin.js') }}?v={{ range(1, 99999) | random }}" defer></script>
 

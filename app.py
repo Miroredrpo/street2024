@@ -22,29 +22,29 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 24 hours
 
 @app.after_request
 def add_cache_headers(response):
-    # Only cache successful GET requests for HTML pages
+    # cache successful html get responses
     if request.method == 'GET' and response.status_code == 200:
         if response.content_type.startswith('text/html'):
-            # Do not cache dynamic HTML (specifically PDP and carts) locally or rigidly
+            # avoid caching dynamic html
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         elif request.path.startswith('/static/'):
-            # Cache static assets intensely
+            # cache static assets
             response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
         elif request.path == '/api/products' or request.path.startswith('/api/products/'):
-            # Cache products API
+            # cache products api
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return response
 
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret')
 
-# Expose Supabase config to Jinja2 templates
+# expose supabase config to templates
 url: str = os.getenv("SUPABASE_URL", "")
 key: str = os.getenv("SUPABASE_KEY", "")
 app.config['SUPABASE_URL'] = url
 app.config['SUPABASE_KEY'] = key
 
-# Initialize Supabase
+# init supabase
 service_key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 try:
     supabase: Client = create_client(url, key)
@@ -53,12 +53,10 @@ except Exception as e:
     supabase_admin = None
 
 
-# ---------------------
-# Auth Helpers
-# ---------------------
+# auth helpers
 
 def get_user_from_token(req):
-    """Extracts JWT token from Authorization header and returns user data if valid."""
+    """get user from token."""
     auth_header = req.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return None
@@ -72,7 +70,7 @@ def get_user_from_token(req):
 
 
 def is_admin(user_id):
-    """Checks if a user has the admin role."""
+    """check admin role."""
     try:
         response = supabase_admin.table("profiles").select("role").eq("id", user_id).execute()
         if response.data and len(response.data) > 0:
@@ -102,13 +100,13 @@ def cloudinary_public_id_from_url(url):
         if "/upload/" not in path:
             return None
         tail = path.split("/upload/", 1)[1]
-        # Drop version segment if present (e.g., v12345/)
+        # drop version segment (v12345/)
         parts = tail.split("/", 1)
         if parts and parts[0].startswith("v") and parts[0][1:].isdigit():
             tail = parts[1] if len(parts) > 1 else ""
         if not tail:
             return None
-        # Remove file extension
+        # drop file extension
         if "." in tail:
             tail = tail.rsplit(".", 1)[0]
         return tail or None
@@ -116,9 +114,7 @@ def cloudinary_public_id_from_url(url):
         return None
 
 
-# ---------------------
-# Storefront Routes
-# ---------------------
+# storefront routes
 
 @app.route("/favicon.ico")
 def favicon():
@@ -142,7 +138,7 @@ def forgot_password_page():
 
 @app.route("/product/<product_id>")
 def pdp(product_id):
-    """Server-side rendered Product Detail Page for SEO + instant load."""
+    """server rendered pdp."""
     try:
         response = supabase_admin.table("products").select("*").eq("id", product_id).single().execute()
         product = response.data
@@ -154,9 +150,7 @@ def pdp(product_id):
         abort(404)
 
 
-# ---------------------
-# Admin Routes
-# ---------------------
+# admin routes
 
 @app.route("/admin")
 def admin():
@@ -168,20 +162,18 @@ def checkout_page():
     return render_template("checkout.html")
 
 
-# ---------------------
-# Helper: Cart expiration
-# ---------------------
+# cart hold cleanup
 def cleanup_expired_holds():
     try:
         now_str = datetime.now(timezone.utc).isoformat()
-        # Atomically delete expired holds and return deleted rows to avoid race conditions
+        # delete expired holds atomically
         expired_res = supabase_admin.table("cart_items").delete().not_.is_("expires_at", "null").lt("expires_at", now_str).execute()
         if not expired_res.data:
             return
 
-        # Restore stock for each deleted item
+        # restore stock
         for item in expired_res.data:
-            # Get current stock
+            # get current stock
             prod_res = supabase_admin.table("products").select("stock").eq("id", item['product_id']).execute()
             if prod_res.data:
                 current_stock = prod_res.data[0].get("stock", 0)
@@ -191,9 +183,7 @@ def cleanup_expired_holds():
     except Exception as e:
         print("Cleanup error:", e)
 
-# ---------------------
-# Public API — Products
-# ---------------------
+# public api: products
 
 @app.route("/api/products", methods=["GET"])
 def get_products():
@@ -298,9 +288,7 @@ def get_shipping_rates():
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
 
-# ---------------------
-# Protected API — Cart
-# ---------------------
+# protected api: cart
 
 @app.route("/api/cart", methods=["GET"])
 def get_cart():
@@ -332,13 +320,13 @@ def add_to_cart():
     try:
         cleanup_expired_holds()
 
-        # Check product stock
+        # check stock
         prod_res = supabase_admin.table("products").select("stock").eq("id", product_id).execute()
         if not prod_res.data:
             return jsonify({"error": "Product not found"}), 404
         max_stock = prod_res.data[0].get("stock", 0)
 
-        # Check if already exists in cart (matching product and size)
+        # check existing cart item
         query = supabase_admin.table("cart_items").select("*").eq("session_id", session_id).eq("product_id", product_id)
         existing = query.execute()
         
@@ -351,10 +339,10 @@ def add_to_cart():
         if quantity > max_stock:
             return jsonify({"error": f"Only {max_stock} items available"}), 400
 
-        # Create 15-minute expiration timestamp
+        # 15-minute hold
         expires_at_val = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
         
-        # Decrement stock by exactly `quantity` (since they are adding this many more)
+        # decrement stock
         new_stock = max(0, max_stock - quantity)
         supabase_admin.table("products").update({"stock": new_stock}).eq("id", product_id).execute()
 
@@ -384,7 +372,7 @@ def add_to_cart():
 
 @app.route("/api/cart/<cart_item_id>", methods=["PATCH"])
 def update_cart_item(cart_item_id):
-    """Update quantity of a cart item."""
+    """update cart qty."""
     session_id = request.headers.get("X-Guest-Session-ID")
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
@@ -397,7 +385,7 @@ def update_cart_item(cart_item_id):
 
     try:
         cleanup_expired_holds()
-        # We need the old quantity from cart_items and current stock from products
+        # get old qty and stock
         cart_res = supabase_admin.table("cart_items").select("quantity, product_id, products!inner(stock)").eq("id", cart_item_id).eq("session_id", session_id).execute()
         
         if not cart_res.data:
@@ -436,12 +424,12 @@ def remove_from_cart(cart_item_id):
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     try:
-                # Atomically delete and get the deleted item
+                # delete and return item
         del_res = supabase_admin.table("cart_items").delete().eq("id", cart_item_id).eq("session_id", session_id).execute()
         if del_res.data:
             qty = del_res.data[0].get('quantity', 0)
             product_id = del_res.data[0]['product_id']
-            # Put stock back securely
+            # restore stock
             prod_res = supabase_admin.table("products").select("stock").eq("id", product_id).execute()
             if prod_res.data:
                 current_stock = prod_res.data[0].get('stock', 0)
@@ -451,9 +439,7 @@ def remove_from_cart(cart_item_id):
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
-# ---------------------
-# Checkout API
-# ---------------------
+# checkout api
 
 @app.route("/api/checkout/validate-coupon", methods=["POST"])
 def validate_coupon():
@@ -537,7 +523,7 @@ def place_order():
         return jsonify({"error": "Please input a valid 10-digit alternate phone number"}), 400
         
     try:
-        # Get cart
+        # get cart
         cart_res = supabase_admin.table("cart_items").select("*, products(*)").eq("session_id", session_id).execute()
         if not cart_res.data:
             return jsonify({"error": "Cart is empty"}), 400
@@ -615,7 +601,7 @@ def place_order():
             
         order = order_res.data[0]
         
-        # Save order items
+        # save order items
         order_items_data = []
         for item in cart_items:
             order_items_data.append({
@@ -628,7 +614,7 @@ def place_order():
             
         supabase_admin.table("order_items").insert(order_items_data).execute()
         
-        # Remove cart items
+        # clear cart
         supabase_admin.table("cart_items").delete().eq("session_id", session_id).execute()
         
         return jsonify({"message": "Order placed successfully", "order_id": order_number}), 200
@@ -643,7 +629,7 @@ def get_user_orders():
         return jsonify({"error": "Unauthorized"}), 401
 
     try:
-        # Fetch the user's orders and include order_items & their products
+        # fetch orders with items
         res = supabase_admin.table("orders").select("*, order_items(*, products(*))").eq("session_id", session_id).order('created_at', desc=True).execute()
         return jsonify(res.data), 200
     except Exception as e:
@@ -672,7 +658,7 @@ def cancel_user_order(order_id):
         return jsonify({"error": "Unauthorized"}), 401
     
     try:
-        # Verify the order belongs to the user
+        # verify ownership
         order_res = supabase_admin.table("orders").select("*").eq("id", order_id).eq("session_id", session_id).execute()
         if not order_res.data:
             return jsonify({"error": "Order not found"}), 404
@@ -686,9 +672,7 @@ def cancel_user_order(order_id):
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred while cancelling order: {str(e)}"}), 500
 
-# ---------------------
-# Admin API — Protected & Role Restricted
-# ---------------------
+# admin api
 
 @app.route("/api/admin/shipping-rates", methods=["GET"])
 def admin_get_shipping_rates():
@@ -752,13 +736,13 @@ def admin_upsert_shipping_rates():
 
 @app.route("/api/admin/stats", methods=["GET"])
 def admin_stats():
-    """Dashboard statistics: total sales, pending orders, low stock."""
+    """dashboard stats."""
     user = get_user_from_token(request)
     if not user or not is_admin(user.id):
         return jsonify({"error": "Forbidden"}), 403
 
     try:
-        # Total sales (sum of all orders)
+        # total sales
         orders_res = supabase_admin.table("orders").select("total_amount, status").execute()
         orders = orders_res.data or []
 
@@ -766,11 +750,11 @@ def admin_stats():
         pending_orders = len([o for o in orders if o['status'] == 'pending'])
         total_orders = len(orders)
 
-        # Low stock products (stock <= 5)
+        # low stock
         low_stock_res = supabase_admin.table("products").select("id").lte("stock", 5).eq("is_active", True).execute()
         low_stock_count = len(low_stock_res.data) if low_stock_res.data else 0
 
-        # Total products
+        # total products
         products_res = supabase_admin.table("products").select("id").eq("is_active", True).execute()
         total_products = len(products_res.data) if products_res.data else 0
 
@@ -787,7 +771,7 @@ def admin_stats():
 
 @app.route("/api/admin/products", methods=["GET"])
 def admin_get_products():
-    """Get ALL products for admin (including inactive)."""
+    """get products for admin."""
     user = get_user_from_token(request)
     if not user or not is_admin(user.id):
         return jsonify({"error": "Forbidden"}), 403
@@ -873,7 +857,7 @@ def admin_get_orders():
         return jsonify({"error": "Forbidden"}), 403
 
     try:
-        # Also include user details like phone and address if they exist
+        # include basic order fields
         res = supabase_admin.table("orders").select("*").order('created_at', desc=True).limit(100).execute()
         return jsonify(res.data), 200
     except Exception as e:
@@ -1179,14 +1163,14 @@ def upload_image():
         }
 
         if upload_type == "receipt":
-            # Keep receipts readable while reducing size.
+            # keep receipts readable
             base_options.update({
                 "width": 1400,
                 "height": 1400,
                 "crop": "limit",
             })
         elif upload_type == "size_chart":
-            # Compress size charts but keep them legible.
+            # compress size charts
             base_options.update({
                 "width": 900,
                 "height": 900,
@@ -1200,7 +1184,7 @@ def upload_image():
                 "quality": "auto:eco",
             })
         else:
-            # Product images: slightly compressed with a generous max size.
+            # product images
             base_options.update({
                 "width": 1600,
                 "height": 1600,

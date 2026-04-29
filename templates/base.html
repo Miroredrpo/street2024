@@ -6,16 +6,16 @@
     <meta name="description" content="street2024customize — Premium  clothing delivered to your door. Handcrafted garments with Cash on Delivery.">
     <title>{% block title %}street2024customize{% endblock %}</title>
 
-    <!-- Google Fonts: Inter -->
+    <!-- fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
-    <!-- Stylesheet -->
+    <!-- styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
 
-    <!-- Supabase JS Client -->
+    <!-- supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = "{{ config['SUPABASE_URL'] }}";
@@ -23,7 +23,7 @@
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
     <script>
-        // Init dark mode before body renders to prevent flicker
+        // set theme before paint
         if (localStorage.getItem('theme') !== 'light') {
             document.documentElement.classList.add('dark-mode');
         }
@@ -32,7 +32,7 @@
 </head>
 <body>
 
-    <!-- ========== NAVBAR ========== -->
+    <!-- navbar -->
     <header class="navbar">
         <div class="logo">
             <a href="/">
@@ -73,17 +73,17 @@
         </nav>
     </header>
 
-    <!-- ========== PAGE CONTENT ========== -->
+    <!-- page -->
     {% block content %}{% endblock %}
 
-    <!-- ========== FOOTER ========== -->
+    <!-- footer -->
     <footer class="site-footer">
         <div class="container">
             <p>&copy; 2026 street2024customize. Made by EComm Labs.</p>
         </div>
     </footer>
 
-    <!-- ========== CART SIDEBAR ========== -->
+    <!-- cart -->
     <div id="cart-overlay" class="cart-overlay" onclick="toggleCart()"></div>
 
     <aside id="cart-sidebar" class="cart-sidebar" role="dialog" aria-label="Shopping cart">
@@ -93,7 +93,7 @@
         </div>
 
         <div id="cart-body" class="cart-body">
-            <!-- Dynamic: auth prompt, cart items, or empty state -->
+            <!-- filled by js -->
         </div>
 
         <div id="cart-footer" class="cart-footer" style="display:none;">
@@ -108,10 +108,10 @@
         </div>
     </aside>
 
-    <!-- ========== TOAST CONTAINER ========== -->
+    <!-- toasts -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- ========== SCRIPTS ========== -->
+    <!-- scripts -->
     <script src="{{ url_for('static', filename='js/api.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/store.js') }}" defer></script>
     {% block scripts %}{% endblock %}
@@ -128,7 +128,7 @@
             }
         };
 
-        // Update body class once loaded
+        // sync theme
         if (document.documentElement.classList.contains('dark-mode')) {
             document.body.classList.add('dark-mode');
             document.getElementById('theme-icon').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;

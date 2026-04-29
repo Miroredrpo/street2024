@@ -1,14 +1,12 @@
-/* =============================================
-    — Admin CMS Stylesheet
-   ============================================= */
+/* admin styles */
 
-/* Admin Layout */
+/* layout */
 .admin-wrapper {
     display: flex;
     min-height: 100vh;
 }
 
-/* Sidebar */
+/* sidebar */
 .admin-sidebar {
     width: 240px;
     background: var(--bg-primary);
@@ -134,7 +132,7 @@
     color: var(--text-muted);
 }
 
-/* Main Content */
+/* main */
 .admin-main {
     margin-left: 240px;
     flex: 1;
@@ -175,7 +173,7 @@
     padding: var(--space-4);
 }
 
-/* Dashboard Stats */
+/* stats */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -229,7 +227,7 @@
     margin-top: var(--space-1);
 }
 
-/* Data Tables */
+/* tables */
 .data-table-wrapper {
     background: var(--bg-primary);
     border: 1px solid var(--border);
@@ -286,7 +284,7 @@
     border-bottom: none;
 }
 
-/* Table product image */
+/* table image */
 .table-product-img {
     width: 40px;
     height: 40px;
@@ -295,7 +293,7 @@
     background: var(--bg-secondary);
 }
 
-/* Status Badges */
+/* status badges */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -338,7 +336,7 @@
     color: var(--text-muted);
 }
 
-/* Action Buttons in Tables */
+/* table actions */
 .table-actions {
     display: flex;
     gap: 6px;
@@ -350,7 +348,7 @@
     font-size: var(--font-size-xs);
 }
 
-/* Status Select */
+/* status select */
 .status-select {
     padding: 6px 10px;
     border: 1px solid var(--border);
@@ -367,7 +365,7 @@
     border-color: var(--border-focus);
 }
 
-/* Order Expansion Row */
+/* order details */
 .order-detail-row td {
     padding: 0 !important;
     background: var(--bg-secondary);
@@ -414,7 +412,7 @@
     font-size: var(--font-size-sm);
 }
 
-/* Admin Modals / Product Form */
+/* modals */
 .admin-modal-overlay {
     position: fixed;
     inset: 0;
@@ -480,7 +478,7 @@
     display: block;
 }
 
-/* Admin Login Page */
+/* login */
 .admin-login-wrapper {
     display: flex;
     align-items: center;
@@ -511,7 +509,7 @@
     margin-bottom: var(--space-4);
 }
 
-/* Empty State */
+/* empty state */
 .empty-state {
     text-align: center;
     padding: var(--space-6) var(--space-3);
@@ -532,7 +530,7 @@
     margin-bottom: var(--space-2);
 }
 
-/* Responsive Admin */
+/* responsive */
 @media (max-width: 768px) {
     .admin-sidebar {
         transform: translateX(-100%);
@@ -587,7 +585,7 @@
     font-size: 18px;
 }
 
-/* Mobile sidebar overlay */
+/* sidebar overlay */
 .admin-sidebar-overlay {
     position: fixed;
     inset: 0;
@@ -601,7 +599,7 @@
 }
 
 
-/* Additional Responsive Optimizations */
+/* responsive tweaks */
 
 .responsive-header {
     display: flex;
@@ -686,7 +684,7 @@
     }
 }
 
-/* Additional Mobile Optimizations */
+/* mobile tweaks */
 @media (max-width: 768px) {
     .responsive-header {
         flex-direction: column;

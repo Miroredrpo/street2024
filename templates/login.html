@@ -87,13 +87,13 @@
     const sb = window.supabaseClient;
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Redirect home if already logged in
+        // redirect if logged in
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
             window.location.replace('/');
         }
         
-        // Listen for auth state changes
+        // auth changes
         sb.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 window.location.replace('/');
@@ -145,7 +145,7 @@
                     return;
                 }
                 
-                // If the user is automatically put into a session without email confirmation
+                // session without email confirm
                 toggleAuthMode();
                 if (typeof showToast === 'function') {
                     showToast('Account created successfully! Please log in.', 'success');
@@ -154,7 +154,7 @@
                 }
                 return;
             }
-            // For login fallback
+            // login fallback
             setTimeout(() => {
                 if (window.location.pathname === '/login') {
                     window.location.replace('/');

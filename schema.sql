@@ -1,4 +1,4 @@
--- Users table is handled by Supabase Auth (auth.users), but we might want a public profile or roles table.
+-- users handled by supabase auth
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Trigger to create a profile when a new user signs up
+-- create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS trigger AS $$
 BEGIN
@@ -20,7 +20,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- Coupons Table
+-- coupons
 CREATE TABLE IF NOT EXISTS public.coupons (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,
@@ -29,14 +29,14 @@ CREATE TABLE IF NOT EXISTS public.coupons (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- RLS for Coupons
+-- rls: coupons
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Coupons are viewable by everyone." ON public.coupons FOR SELECT USING (true);
 CREATE POLICY "Coupons are modifiable by admins." ON public.coupons FOR ALL USING (
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- Catalogs Table
+-- catalogs
 CREATE TABLE IF NOT EXISTS public.catalogs (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name TEXT NOT NULL,
@@ -50,7 +50,7 @@ CREATE POLICY "Catalogs are modifiable by admins." ON public.catalogs FOR ALL US
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- Products Table
+-- products
 CREATE TABLE IF NOT EXISTS public.products (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   catalog_id UUID REFERENCES public.catalogs(id) ON DELETE SET NULL,
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Shipping Rates Table
+-- shipping rates
 CREATE TABLE IF NOT EXISTS public.shipping_rates (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   country TEXT NOT NULL,
@@ -89,7 +89,7 @@ CREATE POLICY "Shipping rates are modifiable by admins." ON public.shipping_rate
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- Orders Table
+-- orders
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   session_id TEXT,
@@ -121,10 +121,10 @@ CREATE TABLE IF NOT EXISTS public.orders (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Fast lookup for Instagram-based tracking
+-- instagram lookup
 CREATE INDEX IF NOT EXISTS idx_orders_instagram_username ON public.orders (instagram_username);
 
--- Order Items Table
+-- order items
 CREATE TABLE IF NOT EXISTS public.order_items (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   price_at_time DECIMAL(10, 2) NOT NULL
 );
 
--- Product Reviews Table
+-- product reviews
 CREATE TABLE IF NOT EXISTS public.product_reviews (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
@@ -148,7 +148,7 @@ ALTER TABLE public.product_reviews ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Reviews are viewable by everyone." ON public.product_reviews FOR SELECT USING (true);
 CREATE POLICY "Reviews are insertable by everyone." ON public.product_reviews FOR INSERT WITH CHECK (true);
 
--- Customer Feedback Table (admin-managed)
+-- customer feedback
 CREATE TABLE IF NOT EXISTS public.customer_feedback (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   reviewer_name TEXT,
@@ -163,7 +163,7 @@ CREATE POLICY "Customer feedback is modifiable by admins." ON public.customer_fe
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- Cart Items Table
+-- cart items
 CREATE TABLE IF NOT EXISTS public.cart_items (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   session_id TEXT NOT NULL,
@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS public.cart_items (
   UNIQUE(session_id, product_id)
 );
 
--- RLS setup (simplified for now)
+-- rls
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Products are viewable by everyone." ON public.products FOR SELECT USING (true);
 CREATE POLICY "Products are insertable by admins." ON public.products FOR INSERT WITH CHECK (
@@ -187,12 +187,12 @@ CREATE POLICY "Products are updatable by admins." ON public.products FOR UPDATE 
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own orders." ON public.orders FOR SELECT USING (true);
--- Admins can view all orders
+-- admins can view all
 CREATE POLICY "Admins can view all orders." ON public.orders FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 CREATE POLICY "Users can create their own orders." ON public.orders FOR INSERT WITH CHECK (true);
--- Admins can update orders
+-- admins can update orders
 CREATE POLICY "Admins can update orders." ON public.orders FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
@@ -215,7 +215,7 @@ CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles FOR
 CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
 
--- Safe alter commands if running on existing database
+-- safe alters
 DO $$
 BEGIN
     BEGIN

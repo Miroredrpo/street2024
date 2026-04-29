@@ -1,18 +1,12 @@
-/**
- * store.js — Storefront logic
- * Event-driven architecture with custom DOM events
- * 
- */
+/* storefront */
 
 (() => {
-    // ===========================
-    // State
-    // ===========================
+    // state
     let currentUser = null;
     let cartItems = [];
     let cartTimerInterval = null;
     let isLoginMode = true;
-    let pendingCartProductId = null; // Product to add after login (frictionless flow)
+    let pendingCartProductId = null; // add after login
     let productsCache = [];
     let catalogsCache = [];
     let storefrontRequest = null;
@@ -21,9 +15,7 @@
 
     const sb = window.supabaseClient;
 
-    // ===========================
-    // DOM References
-    // ===========================
+    // dom
     const authBtn = document.getElementById('auth-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const cartBtn = document.getElementById('cart-btn');
@@ -35,9 +27,7 @@
     const cartBody = document.getElementById('cart-body');
     const cartFooter = document.getElementById('cart-footer');
 
-    // ===========================
-    // Init
-    // ===========================
+    // init
     window.addEventListener('DOMContentLoaded', async () => {
         const { data: { session } } = await sb.auth.getSession();
 
@@ -48,7 +38,7 @@
             onUserSignedOut();
         }
 
-        // Listen for auth changes
+        // auth changes
         sb.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
                 if (session && session.user) {
@@ -65,7 +55,7 @@
             }
         });
 
-        // Fetch products on home page
+        // home data
         const catalogSections = document.getElementById('catalog-sections');
         if (catalogSections) {
             loadStorefront();
@@ -73,9 +63,7 @@
         }
     });
 
-    // ===========================
-    // Auth State Handlers
-    // ===========================
+    // auth
 
     async function onUserSignedIn() {
         if (authBtn) authBtn.style.display = 'none';
@@ -102,7 +90,7 @@
         closeAuthModal();
         fetchCart();
 
-        // If there's a pending product to add (frictionless cart flow)
+        // add pending product
         if (pendingCartProductId) {
             const pid = pendingCartProductId;
             pendingCartProductId = null;
@@ -124,9 +112,7 @@
         renderCartBody();
     }
 
-    // ===========================
-    // Auth Modal
-    // ===========================
+    // auth modal
 
     window.toggleAuthModal = function() { window.location.href="/login"; };
 
@@ -213,9 +199,7 @@
         }
     };
 
-    // ===========================
-    // Products
-    // ===========================
+    // products
 
     async function loadStorefront() {
         const container = document.getElementById('catalog-sections');
@@ -416,9 +400,7 @@
         });
     }
 
-    // ===========================
-    // Cart
-    // ===========================
+    // cart
 
     window.toggleCart = function () {
         const isOpen = cartSidebar.classList.contains('open');
@@ -432,7 +414,7 @@
             document.body.style.overflow = 'hidden';
             renderCartBody();
 
-            // Focus trap: focus the close button
+            // focus close button
             const closeBtn = cartSidebar.querySelector('.cart-close-btn');
             if (closeBtn) closeBtn.focus();
         }
@@ -447,7 +429,7 @@
         }
     }
 
-    // Listen for cart updates
+    // cart updates
     window.addEventListener('cartUpdated', (e) => {
         const items = e.detail || [];
         const count = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -460,16 +442,16 @@
         cartBadge.textContent = count;
         cartBadge.style.display = count > 0 ? 'flex' : 'none';
 
-        // Bounce animation
+        // bounce
         cartBadge.classList.remove('bounce');
-        void cartBadge.offsetWidth; // Trigger reflow
+        void cartBadge.offsetWidth; // reflow
         if (count > 0) cartBadge.classList.add('bounce');
     }
 
     function renderCartBody() {
         if (!cartBody) return;
 
-        // Logged in but empty cart
+        // empty cart
         if (!cartItems || cartItems.length === 0) {
             cartBody.innerHTML = `
                 <div class="cart-empty">
@@ -482,7 +464,7 @@
             return;
         }
 
-        // Has items — render them
+        // render items
         let total = 0;
         let html = '';
 
@@ -524,13 +506,13 @@
 
         cartBody.innerHTML = html;
 
-        // Show footer with total
+        // show footer
         if (cartFooter) {
             cartFooter.style.display = 'block';
             const totalValEl = document.getElementById('cart-total-value');
             if (totalValEl) totalValEl.textContent = formatCurrency(total);
             
-            // Re-hide inline checkout if it exists (legacy store checkout)
+            // hide legacy checkout
             const checkoutSec = document.getElementById('checkout-section');
             if (checkoutSec) checkoutSec.style.display = 'none';
 
@@ -572,7 +554,7 @@
             });
 
             if (needRefresh) {
-                // If anything expired, refetch
+                // refetch if expired
                 fetchCart();
             }
         }
@@ -581,7 +563,7 @@
         cartTimerInterval = setInterval(updateTimers, 1000);
     }
 
-    // In-cart login (frictionless)
+    // cart login
     window.cartLogin = async function () {
         const email = document.getElementById('cart-login-email')?.value;
         const password = document.getElementById('cart-login-password')?.value;
@@ -601,10 +583,10 @@
         }
     };
 
-    // Add to cart
+    // add to cart
     window.addToCart = async function (productId, size = null) {
 
-        // Get quantity from PDP if available
+        // qty from pdp
         const pdpQtyEl = document.getElementById('pdp-qty');
         const quantity = pdpQtyEl ? parseInt(pdpQtyEl.textContent, 10) : 1;
 
@@ -615,11 +597,11 @@
             });
             await fetchCart();
             
-            // Refresh product grid to update Out of Stock tags immediately
+            // refresh grid
             if (document.getElementById('catalog-sections')) {
                 loadStorefront();
             }
-            // Refresh PDP
+            // refresh pdp
             if (window.location.pathname.startsWith('/product/')) {
                 let currentPDPStock = document.getElementById('pdp-stock');
                 if (currentPDPStock) {
@@ -640,7 +622,7 @@
                 }
             }
 
-            // Open cart to show the item added
+            // open cart
             if (!cartSidebar.classList.contains('open')) {
                 toggleCart();
             }
@@ -650,7 +632,7 @@
         }
     };
 
-    // Update cart quantity
+    // update qty
     window.updateCartQty = async function (cartItemId, newQty, maxStock = null) {
         if (newQty < 1) {
             removeFromCart(cartItemId);
@@ -673,18 +655,18 @@
         }
     };
 
-    // Remove from cart
+    // remove from cart
     window.removeFromCart = async function (cartItemId) {
         try {
             await apiFetch(`/api/cart/${cartItemId}`, { method: 'DELETE' });
             await fetchCart();
             
-            // Refresh product grid to update Out of Stock tags immediately
+            // refresh grid
             if (document.getElementById('catalog-sections')) {
                 loadStorefront();
             }
             
-            // Also refresh PDP if we are on a PDP
+            // refresh pdp
             if (window.location.pathname.startsWith('/product/')) {
                 window.location.reload(); 
             }
@@ -695,7 +677,7 @@
         }
     };
 
-    // Checkout flow
+    // checkout
     window.showCheckoutForm = function () {
         if (!cartItems || cartItems.length === 0) return;
         const proceedBtn = document.getElementById('proceed-checkout-btn');
@@ -725,7 +707,7 @@
 
             showToast('Order placed successfully!', 'success');
 
-            // Reset
+            // reset
             const checkoutSec = document.getElementById('checkout-section');
             if (checkoutSec) checkoutSec.style.display = 'none';
             const proceedBtn = document.getElementById('proceed-checkout-btn');
@@ -743,18 +725,16 @@
         }
     };
 
-    // ===========================
-    // Keyboard & Focus
-    // ===========================
+    // keyboard & focus
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            // Close cart
+            // close cart
             if (cartSidebar?.classList.contains('open')) {
                 toggleCart();
                 return;
             }
-            // Close auth modal
+            // close auth
             const authModal = document.getElementById('auth-modal');
             if (authModal?.classList.contains('active')) {
                 toggleAuthModal();
@@ -762,7 +742,7 @@
         }
     });
 
-    // Focus trap in cart sidebar
+    // focus trap
     cartSidebar?.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
         if (!cartSidebar.classList.contains('open')) return;
@@ -788,9 +768,7 @@
         }
     });
 
-    // ===========================
-    // Utility
-    // ===========================
+    // utils
 
     function escapeHtml(str) {
         if (!str) return '';
@@ -857,7 +835,7 @@
 
 })();
 
-// --- Currency Switcher Logic ---
+// currency
 document.addEventListener('DOMContentLoaded', () => {
     const currencySelect = document.getElementById('currency-select');
     if (currencySelect) {
@@ -871,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Helper for formatting prices (can be used where products are rendered)
+// price helper
 window.formatPrice = (nprPrice, inrPrice, saleNpr, saleInr) => {
     const currency = localStorage.getItem('preferred_currency') || 'NPR';
     const base = currency === 'INR' && inrPrice ? Number(inrPrice) : Number(nprPrice);
@@ -882,7 +860,7 @@ window.formatPrice = (nprPrice, inrPrice, saleNpr, saleInr) => {
     return { base, sale: null };
 };
 
-// --- Update PDP price dynamically ---
+// update pdp price
 document.addEventListener('DOMContentLoaded', () => {
     const pdpPriceDisplay = document.getElementById('pdp-price-display');
     if (pdpPriceDisplay) {

@@ -1,5 +1,5 @@
 
-// GUEST SESSION MANAGER
+// guest session
 function getGuestSessionId() {
     let sid = localStorage.getItem('guest_session_id');
     if (!sid) {
@@ -15,20 +15,15 @@ window.fetch = async function() {
     if (!config) { config = {}; }
     if (!config.headers) { config.headers = {}; }
     
-    // Add guest session ID to every request implicitly
+    // add guest session id
     config.headers['X-Guest-Session-ID'] = getGuestSessionId();
     
     return await originalFetch(resource, config);
 };
 
-/**
- * api.js — Global API wrapper & Toast notification system
- * 
- */
+/* api helpers */
 
-// ===========================
-// Toast Notification System
-// ===========================
+// toasts
 
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -40,7 +35,7 @@ function showToast(message, type = 'info') {
 
     container.appendChild(toast);
 
-    // Auto dismiss after 4s
+    // auto dismiss
     setTimeout(() => {
         toast.classList.add('removing');
         toast.addEventListener('animationend', () => toast.remove());
@@ -49,9 +44,7 @@ function showToast(message, type = 'info') {
 
 window.showToast = showToast;
 
-// ===========================
-// API Fetch Wrapper
-// ===========================
+// api fetch
 
 const apiFetch = async (endpoint, options = {}) => {
     let token = null;
@@ -62,7 +55,7 @@ const apiFetch = async (endpoint, options = {}) => {
             token = session.access_token;
         }
     } catch (e) {
-        // No session available
+        // no session
     }
 
     const headers = {
@@ -84,7 +77,7 @@ const apiFetch = async (endpoint, options = {}) => {
 
         return await response.json();
     } catch (error) {
-        // Don't double-toast; let callers handle if they want
+        // no double toast
         throw error;
     }
 };

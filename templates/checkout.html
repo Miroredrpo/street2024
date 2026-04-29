@@ -105,7 +105,7 @@
 
 <div class="checkout-page">
 <div class="checkout-container">
-    <!-- Left Col: Form -->
+    <!-- form -->
     <div class="checkout-section checkout-form-panel">
         <h2 class="checkout-title">1. Customer Details</h2>
         <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
@@ -263,11 +263,11 @@
         </button>
     </div>
 
-    <!-- Right Col: Summary -->
+    <!-- summary -->
     <div class="checkout-section checkout-summary-panel">
         <h2 class="checkout-title">1. Order Summary</h2>
         <div id="checkout-items">
-            <!-- Items injected here by JS -->
+            <!-- items via js -->
             <p>Loading your cart...</p>
         </div>
         
@@ -303,7 +303,7 @@
     let selectedShipping = { id: null, country: '', zone: '', costNpr: 0, costInr: 0 };
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Wait briefly for store.js auth to init if needed, though this page requires login.
+        // wait for auth init
         setTimeout(loadCheckoutData, 500); 
 
         const currencySelect = document.getElementById('currency-select');
@@ -522,7 +522,7 @@
             });
 
             if (needRefresh) {
-                // If anything expired, just reload data
+                // refetch if expired
                 loadCheckoutData();
             }
         }
@@ -773,7 +773,7 @@
             const data = await res.json();
             if (res.ok) {
                 alert('Order placed successfully! Your order ID is ' + data.order_id);
-                window.location.href = '/'; // Reset to home
+                window.location.href = '/'; // reset to home
             } else {
                 alert(data.error || 'Checkout failed');
                 btn.disabled = false;

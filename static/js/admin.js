@@ -1,20 +1,15 @@
-/**
- * admin.js — Admin CMS Dashboard logic
- * 
- */
+/* admin dashboard */
 
 (() => {
     const sb = window.supabaseClient;
     let adminUser = null;
     let catalogsCache = [];
 
-    // DOM
+    // dom
     const loginWrapper = document.getElementById('admin-login');
     const adminApp = document.getElementById('admin-app');
 
-    // ===========================
-    // Init
-    // ===========================
+    // init
 
     window.addEventListener('DOMContentLoaded', async () => {
         const { data: { session } } = await sb.auth.getSession();
@@ -47,9 +42,7 @@
         });
     });
 
-    // ===========================
-    // Auth - Dashboard only
-    // ===========================
+    // auth
 
     function showDashboard() {
         if (adminApp) adminApp.style.display = 'flex';
@@ -62,7 +55,7 @@
             if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
         }
 
-        // Load default tab
+        // load default tab
         switchAdminTab('dashboard');
     }
 
@@ -71,8 +64,7 @@
         window.location.href = '/login';
     };
 
-    // API Helper
-    // ===========================
+    // api helper
 
     async function adminApi(endpoint, method = 'GET', body = null) {
         if (!adminUser) throw new Error('Not authenticated');
@@ -109,28 +101,26 @@
         return data;
     }
 
-    // ===========================
-    // Tab Navigation
-    // ===========================
+    // tabs
 
     window.switchAdminTab = function (tab) {
-        // Update nav items
+        // update nav
         document.querySelectorAll('.admin-nav-item').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tab);
         });
 
-        // Show/hide tabs
+        // show/hide tabs
         document.querySelectorAll('.admin-tab').forEach(section => {
             section.style.display = 'none';
         });
         const targetTab = document.getElementById(`tab-${tab}`);
         if (targetTab) targetTab.style.display = 'block';
 
-        // Update page title
+        // update title
         const titles = { dashboard: 'Dashboard', products: 'Products', orders: 'Orders', catalogs: 'Catalogs', coupons: 'Coupons', reviews: 'Reviews', shipping: 'Shipping' };
         document.getElementById('admin-page-title').textContent = titles[tab] || 'Dashboard';
 
-        // Close mobile sidebar if open
+        // close sidebar
         const sidebar = document.getElementById('admin-sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         if (sidebar && sidebar.classList.contains('open')) {
@@ -138,7 +128,7 @@
             overlay.classList.remove('active');
         }
 
-        // Load data
+        // load data
         if (tab === 'dashboard') loadDashboardStats();
         if (tab === 'dashboard') loadFeedback();
         if (tab === 'products') loadProducts();
@@ -148,12 +138,12 @@
         if (tab === 'reviews') loadReviews();
         if (tab === 'shipping') loadShippingRates();
 
-        // Close mobile sidebar
+        // close sidebar
         document.getElementById('admin-sidebar').classList.remove('open');
         document.getElementById('sidebar-overlay').classList.remove('active');
     };
 
-    // Mobile sidebar toggle
+    // sidebar
     window.toggleAdminSidebar = function () {
         const sidebar = document.getElementById('admin-sidebar');
         const overlay = document.getElementById('sidebar-overlay');
@@ -161,9 +151,7 @@
         overlay.classList.toggle('active');
     };
 
-    // ===========================
-    // Dashboard Stats
-    // ===========================
+    // stats
 
     async function loadDashboardStats() {
         try {
@@ -179,9 +167,7 @@
         }
     }
 
-    // ===========================
-    // Customer Feedback
-    // ===========================
+    // feedback
 
     async function loadFeedback() {
         const tbody = document.getElementById('admin-feedback-list');
@@ -289,9 +275,7 @@
         }
     };
 
-    // ===========================
-    // Product Management
-    // ===========================
+    // products
 
     async function loadProducts() {
         const tbody = document.getElementById('admin-product-list');
@@ -357,7 +341,7 @@
             }
         }
 
-        // Clear image preview
+        // clear preview
         const preview = document.getElementById('prod-image-preview');
         preview.classList.remove('has-image');
 
@@ -418,7 +402,7 @@
         loadCatalogs();
         refreshCatalogOptions();
 
-        // Show image preview if URL exists
+        // show preview
         if (product.image_url) {
             previewProductImage(product.image_url);
         }
@@ -463,7 +447,7 @@
         let finalImageUrl = document.getElementById('prod-image').dataset.existingUrl || '';
         const fileInput = document.getElementById('prod-image');
         
-        // Upload new file if selected
+        // upload if selected
         if (fileInput.files.length > 0) {
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
@@ -494,7 +478,7 @@
         }
 
         if (otherFileInput && otherFileInput.files.length > 0) {
-            finalOtherImages = []; // Overwrite existing if user selects new files
+            finalOtherImages = []; // overwrite existing
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             
             for (let i = 0; i < otherFileInput.files.length; i++) {
@@ -594,9 +578,7 @@
         }
     };
 
-    // ===========================
-    // Order Management
-    // ===========================
+    // orders
 
     let allOrders = [];
     async function loadOrders() {
@@ -818,9 +800,7 @@
         }
     };
 
-    // ===========================
-    // Keyboard
-    // ===========================
+    // keyboard
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -831,9 +811,7 @@
         }
     });
 
-    // ===========================
-    // Utility
-    // ===========================
+    // utils
 
     function escapeHtml(str) {
         if (!str) return '';
@@ -843,9 +821,7 @@
     }
 
 
-    // ===========================
-    // COUPONS
-    // ===========================
+    // coupons
 
     async function loadCoupons() {
         const tbody = document.getElementById('admin-coupon-list');
@@ -916,7 +892,7 @@
     };
 
     // ===========================
-    // SHIPPING RATES
+    // shipping rates
     // ===========================
 
     async function loadShippingRates() {
@@ -984,7 +960,7 @@
     }
 
     // ===========================
-    // CATALOGS
+    // catalogs
     // ===========================
 
     async function loadCatalogs() {
@@ -1082,7 +1058,7 @@
     }
 
     // ===========================
-    // REVIEWS
+    // reviews
     // ===========================
 
     async function loadReviews() {
@@ -1147,7 +1123,7 @@
     };
 
     // ===========================
-    // Manage Carts
+    // carts
     // ===========================
 
     let cartTimerIntervalAdmin = null;
