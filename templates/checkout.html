@@ -215,7 +215,7 @@
         </div>
         
         <div style="margin-top: 2rem;">
-            <h3>Delivary Charge</h3>
+            <h3>Payment Option</h3>
             <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
                 <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                     <input type="radio" name="payment_method" value="fonepay" checked onchange="togglePayment()"> Fonepay
@@ -252,8 +252,8 @@
                 }
             }
 
-            if (isFonepay) {
-                qrImg.src = "https://via.placeholder.com/150/00A86B/FFFFFF?text=Fonepay+QR";
+            if (isFonepay && qrImg) {
+                qrImg.src = "/static/img/image.png";
             }
         }
         </script>
@@ -283,7 +283,7 @@
         </div>
 
         <div id="shipping-row" class="order-summary-item" style="display: none;">
-            <span>Shipping</span>
+            <span>Delivary Charge</span>
             <span id="shipping-amount">Rs. 0</span>
         </div>
         
