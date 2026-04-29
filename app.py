@@ -495,7 +495,7 @@ def place_order():
     shipping_rate_id = data.get("shipping_rate_id")
     currency = data.get("currency") or "NPR"
     coupon_code = data.get("coupon_code")
-    payment_method = data.get("payment_method", "cash_on_delivery")
+    payment_method = (data.get("payment_method") or "cash_on_delivery").strip().lower()
     payment_receipt_url = data.get("payment_receipt_url")
     alternate_contact_number = data.get("alternate_contact_number")
     custom_message = data.get("custom_message")
@@ -527,6 +527,9 @@ def place_order():
     if country == "India" and not shipping_zone:
         shipping_zone = "flat"
         
+    if payment_method == "fonepay" and not payment_receipt_url:
+        return jsonify({"error": "Payment receipt is required for Fonepay"}), 400
+
     if not contact_number or not contact_number.isdigit() or len(contact_number) != 10:
         return jsonify({"error": "Please input a valid 10-digit phone number"}), 400
         
