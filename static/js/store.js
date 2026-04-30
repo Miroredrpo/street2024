@@ -26,6 +26,10 @@
     const cartOverlay = document.getElementById('cart-overlay');
     const cartBody = document.getElementById('cart-body');
     const cartFooter = document.getElementById('cart-footer');
+    const navActions = document.querySelector('.nav-actions');
+    const catalogBubbles = document.getElementById('catalog-bubbles');
+    const catalogHomeParent = catalogBubbles ? catalogBubbles.parentElement : null;
+    const catalogHomeNextSibling = catalogBubbles ? catalogBubbles.nextElementSibling : null;
 
     // init
     window.addEventListener('DOMContentLoaded', async () => {
@@ -61,7 +65,35 @@
             loadStorefront();
             loadFeedback();
         }
+
+        updateCatalogPlacement();
+        window.addEventListener('resize', debounce(updateCatalogPlacement, 150));
     });
+
+    function updateCatalogPlacement() {
+        if (!catalogBubbles || !navActions || !catalogHomeParent) return;
+
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (isMobile) {
+            if (!navActions.contains(catalogBubbles)) {
+                navActions.insertBefore(catalogBubbles, navActions.firstChild);
+            }
+        } else if (catalogBubbles.parentElement !== catalogHomeParent) {
+            if (catalogHomeNextSibling && catalogHomeNextSibling.parentElement === catalogHomeParent) {
+                catalogHomeParent.insertBefore(catalogBubbles, catalogHomeNextSibling);
+            } else {
+                catalogHomeParent.appendChild(catalogBubbles);
+            }
+        }
+    }
+
+    function debounce(fn, delay) {
+        let timer = null;
+        return (...args) => {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), delay);
+        };
+    }
 
     // auth
 

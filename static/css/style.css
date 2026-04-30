@@ -1255,8 +1255,13 @@ img {
         flex-wrap: wrap;
         gap: var(--space-2);
     }
+    .navbar .logo {
+        order: 1;
+    }
     .nav-toggle {
         display: inline-flex;
+        order: 2;
+        margin-left: auto;
     }
     .nav-quick {
         margin-left: auto;
@@ -1268,12 +1273,20 @@ img {
         border-top: 1px solid var(--border);
         flex-wrap: wrap;
         justify-content: flex-start;
+        order: 3;
         max-height: 0;
         opacity: 0;
         transform: translateY(-6px);
         overflow: hidden;
         pointer-events: none;
         transition: max-height 260ms ease, opacity 200ms ease, transform 200ms ease;
+    }
+    .nav-actions .catalog-bubbles {
+        width: 100%;
+        margin: 0 0 var(--space-2);
+    }
+    .nav-actions .catalog-bubble {
+        flex: 1 1 auto;
     }
     .nav-actions.nav-open {
         max-height: 480px;
