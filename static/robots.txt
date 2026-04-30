@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /orders
+
+Sitemap: https://www.streetcustomize.com.np/sitemap.xml

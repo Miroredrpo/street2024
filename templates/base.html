@@ -3,9 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="street2024customize — Premium  clothing delivered to your door. Handcrafted garments with Cash on Delivery.">
+    <meta name="description" content="Design your own streetwear in Nepal. Custom hoodies, tees & jackets with your logo or design. Fast delivery across Nepal & India. Shop now at Street Customize." />
     <meta name="google-site-verification" content="Gg6cdTCK6p2GGBin-4fIix7A9KZEC3YYpZHy3HKkqTg" />
-    <title>{% block title %}street2024customize{% endblock %}</title>
+    <link rel="canonical" href="https://www.streetcustomize.com.np/" />
+
+    <meta property="og:title" content="Street Customize Nepal | Custom Streetwear" />
+    <meta property="og:description" content="Design your own hoodies, tees & jackets. Custom streetwear delivered across Nepal & India." />
+    <meta property="og:image" content="https://www.streetcustomize.com.np/og-image.jpg" />
+    <meta property="og:url" content="https://www.streetcustomize.com.np/" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <title>{% block title %}Street Customize Nepal | Custom Streetwear & Hoodies{% endblock %}</title>
 
     <!-- fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,8 +22,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
-    <!-- styles -->
+        <!-- styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Street Customize Nepal",
+            "url": "https://www.streetcustomize.com.np",
+            "logo": "https://www.streetcustomize.com.np/logo.png",
+            "description": "Custom streetwear brand in Nepal offering personalized hoodies, tees, and jackets.",
+            "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "NP",
+                "addressLocality": "Kathmandu"
+            },
+            "sameAs": [
+                "https://www.instagram.com/streetcustomize",
+                "https://www.facebook.com/streetcustomize"
+            ]
+        }
+        </script>
 
     <!-- supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
