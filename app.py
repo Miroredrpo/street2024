@@ -124,6 +124,10 @@ def favicon():
 def robots():
     return send_from_directory(app.static_folder, "robots.txt")
 
+@app.route("/sitemap.xml")
+def sitemap():
+    return send_from_directory(app.static_folder, "sitemap.xml")
+
 @app.route("/orders")
 def orders_page():
     return render_template("orders.html")
