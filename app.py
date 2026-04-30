@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
-from flask import Flask, jsonify, request, render_template, abort
+from flask import Flask, jsonify, request, render_template, abort, send_from_directory
 from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
@@ -119,6 +119,10 @@ def cloudinary_public_id_from_url(url):
 @app.route("/favicon.ico")
 def favicon():
     return "", 204
+
+@app.route("/robots.txt")
+def robots():
+    return send_from_directory(app.static_folder, "robots.txt")
 
 @app.route("/orders")
 def orders_page():
