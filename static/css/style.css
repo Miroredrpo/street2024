@@ -80,6 +80,43 @@ body {
     border: 0;
 }
 
+.seo-summary {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 12px var(--space-3) 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.seo-summary details {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+}
+
+.seo-summary summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.seo-summary-body {
+    margin-top: 10px;
+    color: var(--text-muted);
+}
+
+.seo-summary-body h2 {
+    font-size: var(--font-size-base);
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.seo-summary-body ul {
+    margin-top: 8px;
+    padding-left: 18px;
+}
+
 h1, h2, h3, h4, h5, h6 {
     line-height: 1.2;
     font-weight: 600;
