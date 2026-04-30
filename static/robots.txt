@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /orders
+Disallow: /cart
 
 Sitemap: https://www.streetcustomize.com.np/sitemap.xml

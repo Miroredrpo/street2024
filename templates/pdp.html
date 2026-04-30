@@ -4,6 +4,26 @@
 
 {% block head %}
 <meta name="description" content="{{ product.description[:160] if product.description else 'Shop ' + product.title + ' at street2024customize.' }}">
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "{{ product.name }}",
+    "description": "{{ product.description }}",
+    "image": "{{ product.image_url }}",
+    "brand": {
+        "@type": "Brand",
+        "name": "Street Customize Nepal"
+    },
+    "offers": {
+        "@type": "Offer",
+        "price": "{{ product.price }}",
+        "priceCurrency": "NPR",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.streetcustomize.com.np/product/{{ product.id }}"
+    }
+}
+</script>
 {% endblock %}
 
 {% block content %}
