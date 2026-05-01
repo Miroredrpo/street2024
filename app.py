@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
 from flask import Flask, jsonify, request, render_template, abort, send_from_directory
+from werkzeug.exceptions import RequestEntityTooLarge
 from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
@@ -19,6 +20,8 @@ cloudinary.config(
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 86400  # 24 hours
+max_upload_mb = int(os.getenv("MAX_UPLOAD_MB", "8"))
+app.config['MAX_CONTENT_LENGTH'] = max_upload_mb * 1024 * 1024
 
 @app.after_request
 def add_cache_headers(response):
@@ -34,6 +37,13 @@ def add_cache_headers(response):
             # cache products api
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return response
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_file_too_large(err):
+    return jsonify({
+        "error": f"File too large. Max upload size is {max_upload_mb} MB."
+    }), 413
 
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret')

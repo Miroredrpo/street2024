@@ -4,6 +4,99 @@
     const sb = window.supabaseClient;
     let adminUser = null;
     let catalogsCache = [];
+    const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+    const TARGET_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+    function loadImageFromFile(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Unable to read image file.'));
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    function canvasToBlob(canvas, type, quality) {
+        return new Promise(resolve => {
+            canvas.toBlob(blob => resolve(blob), type, quality);
+        });
+    }
+
+    async function compressImage(file, options) {
+        if (!file || !file.type.startsWith('image/')) return file;
+
+        const img = await loadImageFromFile(file);
+        const maxWidth = options.maxWidth || img.width;
+        const maxHeight = options.maxHeight || img.height;
+        const targetBytes = options.targetBytes || TARGET_UPLOAD_BYTES;
+
+        let width = img.width;
+        let height = img.height;
+        const ratio = Math.min(1, maxWidth / width, maxHeight / height);
+        if (ratio < 1) {
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        let quality = 0.85;
+        let blob = null;
+
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+            if (blob && blob.size <= targetBytes) break;
+
+            quality = Math.max(0.55, quality - 0.1);
+            if (attempt >= 3) {
+                width = Math.max(1, Math.round(width * 0.85));
+                height = Math.max(1, Math.round(height * 0.85));
+            }
+        }
+
+        if (!blob) return file;
+        if (blob.size >= file.size && file.size <= targetBytes) return file;
+
+        const newName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+        return new File([blob], newName, { type: 'image/jpeg' });
+    }
+
+    async function prepareUploadFile(file, options) {
+        if (!file) return file;
+        if (file.size <= MAX_UPLOAD_BYTES) return file;
+
+        const compressed = await compressImage(file, {
+            maxWidth: options.maxWidth,
+            maxHeight: options.maxHeight,
+            targetBytes: TARGET_UPLOAD_BYTES
+        });
+
+        if (compressed && compressed.size > MAX_UPLOAD_BYTES) {
+            throw new Error('Image is still too large after compression. Please choose a smaller file.');
+        }
+        return compressed;
+    }
+
+    async function parseUploadResponse(response) {
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (err) {
+            data = null;
+        }
+
+        if (!response.ok) {
+            const statusMsg = `Upload failed (Status: ${response.status}).`;
+            throw new Error(data?.error || statusMsg);
+        }
+
+        return data || {};
+    }
 
     // dom
     const loginWrapper = document.getElementById('admin-login');
@@ -228,18 +321,21 @@
         let imageUrl = '';
         if (imageEl && imageEl.files && imageEl.files.length > 0) {
             const formData = new FormData();
-            formData.append('file', imageEl.files[0]);
-            formData.append('upload_type', 'feedback');
-
             try {
+                const uploadFile = await prepareUploadFile(imageEl.files[0], {
+                    maxWidth: 1000,
+                    maxHeight: 1000
+                });
+                formData.append('file', uploadFile);
+                formData.append('upload_type', 'feedback');
+
                 const { data: { session } } = await window.supabaseClient.auth.getSession();
                 const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${session.access_token}` },
                     body: formData
                 });
-                const uploadData = await uploadRes.json();
-                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                const uploadData = await parseUploadResponse(uploadRes);
                 imageUrl = uploadData.url;
             } catch (err) {
                 showToast(`Image upload error: ${err.message}`, 'error');
@@ -450,18 +546,21 @@
         // upload if selected
         if (fileInput.files.length > 0) {
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('upload_type', 'product');
-            
             try {
+                const uploadFile = await prepareUploadFile(fileInput.files[0], {
+                    maxWidth: 2000,
+                    maxHeight: 2000
+                });
+                formData.append('file', uploadFile);
+                formData.append('upload_type', 'product');
+
                 const { data: { session } } = await window.supabaseClient.auth.getSession();
                 const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${session.access_token}` },
                     body: formData
                 });
-                const uploadData = await uploadRes.json();
-                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                const uploadData = await parseUploadResponse(uploadRes);
                 finalImageUrl = uploadData.url;
             } catch (err) {
                 showToast(`Image upload error: ${err.message}`, 'error');
@@ -483,16 +582,20 @@
             
             for (let i = 0; i < otherFileInput.files.length; i++) {
                 const formData = new FormData();
-                formData.append('file', otherFileInput.files[i]);
-                formData.append('upload_type', 'product');
                 try {
+                    const uploadFile = await prepareUploadFile(otherFileInput.files[i], {
+                        maxWidth: 2000,
+                        maxHeight: 2000
+                    });
+                    formData.append('file', uploadFile);
+                    formData.append('upload_type', 'product');
+
                     const uploadRes = await fetch('/api/upload', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${session.access_token}` },
                         body: formData
                     });
-                    const uploadData = await uploadRes.json();
-                    if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                    const uploadData = await parseUploadResponse(uploadRes);
                     finalOtherImages.push(uploadData.url);
                 } catch (err) {
                     showToast(`Other image upload error: ${err.message}`, 'error');
@@ -511,17 +614,21 @@
         }
         if (sizeChartInput && sizeChartInput.files.length > 0) {
             const formData = new FormData();
-            formData.append('file', sizeChartInput.files[0]);
-            formData.append('upload_type', 'size_chart');
             try {
+                const uploadFile = await prepareUploadFile(sizeChartInput.files[0], {
+                    maxWidth: 900,
+                    maxHeight: 900
+                });
+                formData.append('file', uploadFile);
+                formData.append('upload_type', 'size_chart');
+
                 const { data: { session } } = await window.supabaseClient.auth.getSession();
                 const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${session.access_token}` },
                     body: formData
                 });
-                const uploadData = await uploadRes.json();
-                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                const uploadData = await parseUploadResponse(uploadRes);
                 finalSizeChartUrl = uploadData.url;
             } catch (err) {
                 showToast(`Size chart upload error: ${err.message}`, 'error');
