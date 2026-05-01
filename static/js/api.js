@@ -1,36 +1,23 @@
 
 // guest session
-function getGuestSessionId() {
+async function getGuestSessionId() {
     let sid = localStorage.getItem('guest_session_id');
-    if (!sid) {
-        sid = 'sess_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-        localStorage.setItem('guest_session_id', sid);
+    if (sid) return sid;
+
+    try {
+        const res = await fetch('/api/guest-session', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok && data.session_id) {
+            localStorage.setItem('guest_session_id', data.session_id);
+            return data.session_id;
+        }
+    } catch (e) {
+        // ignore
     }
-    return sid;
+    return null;
 }
 
-const originalFetch = window.fetch;
-window.fetch = async function() {
-    let [resource, config ] = arguments;
-    if (!config) { config = {}; }
-    if (!config.headers) { config.headers = {}; }
-
-    const requestUrl = resource?.url || resource;
-    let isSameOrigin = true;
-    try {
-        const resolvedUrl = new URL(requestUrl, window.location.href);
-        isSameOrigin = resolvedUrl.origin === window.location.origin;
-    } catch (e) {
-        isSameOrigin = true;
-    }
-
-    // add guest session id only for same-origin requests
-    if (isSameOrigin) {
-        config.headers['X-Guest-Session-ID'] = getGuestSessionId();
-    }
-
-    return await originalFetch(resource, config);
-};
+window.getGuestSessionId = getGuestSessionId;
 
 /* api helpers */
 

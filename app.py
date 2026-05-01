@@ -1,7 +1,11 @@
 import uuid
 from datetime import datetime, timezone, timedelta
+import time
+import hashlib
+import hmac
+import secrets
 from urllib.parse import urlparse
-from flask import Flask, jsonify, request, render_template, abort, send_from_directory
+from flask import Flask, jsonify, request, render_template, abort, send_from_directory, g
 from werkzeug.exceptions import RequestEntityTooLarge
 from supabase import create_client, Client
 import os
@@ -33,7 +37,7 @@ def add_cache_headers(response):
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         elif request.path.startswith('/static/'):
             # cache static assets
-            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+            response.headers['Cache-Control'] = 'public, max-age=604800'
         elif request.path == '/api/products' or request.path.startswith('/api/products/'):
             # cache products api
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -48,6 +52,15 @@ def handle_file_too_large(err):
 
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret')
+
+GUEST_SESSION_COOKIE = "guest_session"
+GUEST_SESSION_TTL_DAYS = int(os.getenv("GUEST_SESSION_TTL_DAYS", "30"))
+GUEST_SESSION_SECRET = os.getenv("GUEST_SESSION_SECRET", app.config['SECRET_KEY'])
+SIGNATURE_RATE_LIMIT = int(os.getenv("SIGNATURE_RATE_LIMIT", "12"))
+SIGNATURE_RATE_WINDOW_SEC = int(os.getenv("SIGNATURE_RATE_WINDOW_SEC", "600"))
+
+# in-memory rate limiter (best-effort on serverless)
+_signature_rate_state = {}
 
 # expose supabase config to templates
 url: str = os.getenv("SUPABASE_URL", "")
@@ -134,6 +147,95 @@ def get_upload_folder(upload_type):
     if upload_type == "feedback":
         return "feedback"
     return "products"
+
+
+def get_upload_constraints(upload_type):
+    max_mb = int(os.getenv("UPLOAD_MAX_MB", "8"))
+    return {
+        "max_file_size": max_mb * 1024 * 1024
+    }
+
+
+def check_signature_rate_limit(session_id, client_ip):
+    now_ts = int(time.time())
+    key = f"{session_id}:{client_ip}"
+    window_start = now_ts - SIGNATURE_RATE_WINDOW_SEC
+    timestamps = _signature_rate_state.get(key, [])
+    timestamps = [ts for ts in timestamps if ts >= window_start]
+    if len(timestamps) >= SIGNATURE_RATE_LIMIT:
+        _signature_rate_state[key] = timestamps
+        return False
+    timestamps.append(now_ts)
+    _signature_rate_state[key] = timestamps
+    return True
+
+
+def get_client_ip(req):
+    forwarded = req.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return req.remote_addr or "unknown"
+
+
+def _sign_guest_session(session_id, issued_at):
+    msg = f"{session_id}:{issued_at}".encode("utf-8")
+    secret = (GUEST_SESSION_SECRET or "").encode("utf-8")
+    signature = hmac.new(secret, msg, hashlib.sha256).hexdigest()
+    return f"{session_id}:{issued_at}:{signature}"
+
+
+def _verify_guest_session(token):
+    if not token or token.count(":") != 2:
+        return None
+    session_id, issued_at_str, sig = token.split(":", 2)
+    if not session_id or not issued_at_str or not sig:
+        return None
+    try:
+        issued_at = int(issued_at_str)
+    except ValueError:
+        return None
+    expected = _sign_guest_session(session_id, issued_at)
+    if not hmac.compare_digest(expected, token):
+        return None
+    max_age = GUEST_SESSION_TTL_DAYS * 24 * 60 * 60
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    if now_ts - issued_at > max_age:
+        return None
+    return session_id
+
+
+def get_guest_session_id():
+    if hasattr(g, "guest_session_id") and g.guest_session_id:
+        return g.guest_session_id
+
+    token = request.cookies.get(GUEST_SESSION_COOKIE)
+    session_id = _verify_guest_session(token)
+    if session_id:
+        g.guest_session_id = session_id
+        return session_id
+
+    # create new guest session
+    session_id = f"gs_{secrets.token_urlsafe(18)}"
+    issued_at = int(datetime.now(timezone.utc).timestamp())
+    token = _sign_guest_session(session_id, issued_at)
+    g.guest_session_id = session_id
+    g.set_guest_session_cookie = token
+    return session_id
+
+
+@app.after_request
+def add_guest_session_cookie(response):
+    token = getattr(g, "set_guest_session_cookie", None)
+    if token:
+        response.set_cookie(
+            GUEST_SESSION_COOKIE,
+            token,
+            max_age=GUEST_SESSION_TTL_DAYS * 24 * 60 * 60,
+            httponly=True,
+            samesite="Lax",
+            secure=request.is_secure
+        )
+    return response
 
 
 # storefront routes
@@ -255,7 +357,7 @@ def create_product_review(product_id):
     data = request.json or {}
     rating = data.get("rating")
     review_text = (data.get("review_text") or "").strip()
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
 
     if rating is None:
         return jsonify({"error": "Rating is required"}), 400
@@ -323,7 +425,7 @@ def get_shipping_rates():
 @app.route("/api/cart", methods=["GET"])
 def get_cart():
     cleanup_expired_holds()
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     try:
@@ -335,7 +437,7 @@ def get_cart():
 
 @app.route("/api/cart", methods=["POST"])
 def add_to_cart():
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -403,7 +505,7 @@ def add_to_cart():
 @app.route("/api/cart/<cart_item_id>", methods=["PATCH"])
 def update_cart_item(cart_item_id):
     """update cart qty."""
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -450,7 +552,7 @@ def update_cart_item(cart_item_id):
 @app.route("/api/cart/<cart_item_id>", methods=["DELETE"])
 def remove_from_cart(cart_item_id):
     cleanup_expired_holds()
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     try:
@@ -473,7 +575,7 @@ def remove_from_cart(cart_item_id):
 
 @app.route("/api/checkout/validate-coupon", methods=["POST"])
 def validate_coupon():
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     
@@ -492,7 +594,7 @@ def validate_coupon():
 @app.route("/api/checkout", methods=["POST"])
 def place_order():
     cleanup_expired_holds()
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
         
@@ -654,7 +756,7 @@ def place_order():
 
 @app.route("/api/orders", methods=["GET"])
 def get_user_orders():
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -664,6 +766,12 @@ def get_user_orders():
         return jsonify(res.data), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred while loading orders: {str(e)}"}), 500
+
+
+@app.route("/api/guest-session", methods=["POST"])
+def issue_guest_session():
+    session_id = get_guest_session_id()
+    return jsonify({"session_id": session_id}), 200
 
 
 @app.route("/api/orders/lookup", methods=["POST"])
@@ -683,7 +791,7 @@ def lookup_orders_by_instagram():
 
 @app.route("/api/orders/<order_id>/cancel", methods=["POST"])
 def cancel_user_order(order_id):
-    session_id = request.headers.get("X-Guest-Session-ID")
+    session_id = get_guest_session_id()
     if not session_id:
         return jsonify({"error": "Unauthorized"}), 401
     
@@ -1170,8 +1278,8 @@ def admin_delete_feedback(feedback_id):
 
 @app.route("/api/upload", methods=["POST"])
 def upload_image():
-    session_id = request.headers.get("X-Guest-Session-ID")
-    if not session_id:
+    upload_type = (request.form.get("upload_type") or "product").strip().lower()
+    if upload_type != "receipt":
         user = get_user_from_token(request)
         if not user or not is_admin(user.id):
             return jsonify({"error": "Unauthorized"}), 401
@@ -1229,14 +1337,18 @@ def upload_image():
 
 @app.route("/api/cloudinary-signature", methods=["POST"])
 def get_cloudinary_signature():
-    session_id = request.headers.get("X-Guest-Session-ID")
-    if not session_id:
+    data = request.json or {}
+    upload_type = (data.get("upload_type") or "product").strip().lower()
+
+    if upload_type != "receipt":
         user = get_user_from_token(request)
         if not user or not is_admin(user.id):
             return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.json or {}
-    upload_type = data.get("upload_type")
+    else:
+        session_id = get_guest_session_id()
+        client_ip = get_client_ip(request)
+        if not check_signature_rate_limit(session_id, client_ip):
+            return jsonify({"error": "Too many upload attempts. Please try again later."}), 429
 
     cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "")
     api_key = os.getenv("CLOUDINARY_API_KEY", "")
@@ -1246,10 +1358,12 @@ def get_cloudinary_signature():
 
     timestamp = int(datetime.now(timezone.utc).timestamp())
     folder = get_upload_folder(upload_type)
+    constraints = get_upload_constraints(upload_type)
 
     params_to_sign = {
         "folder": folder,
-        "timestamp": timestamp
+        "timestamp": timestamp,
+        "max_file_size": constraints["max_file_size"]
     }
     signature = cloudinary.utils.api_sign_request(params_to_sign, api_secret)
 
@@ -1258,7 +1372,8 @@ def get_cloudinary_signature():
         "api_key": api_key,
         "timestamp": timestamp,
         "signature": signature,
-        "folder": folder
+        "folder": folder,
+        "max_file_size": constraints["max_file_size"]
     }), 200
 
 if __name__ == "__main__":

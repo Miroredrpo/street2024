@@ -124,6 +124,7 @@
         formData.append('timestamp', signed.timestamp);
         formData.append('signature', signed.signature);
         if (signed.folder) formData.append('folder', signed.folder);
+        if (signed.max_file_size) formData.append('max_file_size', signed.max_file_size);
 
         const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloud_name}/image/upload`, {
             method: 'POST',
