@@ -14,10 +14,21 @@ window.fetch = async function() {
     let [resource, config ] = arguments;
     if (!config) { config = {}; }
     if (!config.headers) { config.headers = {}; }
-    
-    // add guest session id
-    config.headers['X-Guest-Session-ID'] = getGuestSessionId();
-    
+
+    const requestUrl = resource?.url || resource;
+    let isSameOrigin = true;
+    try {
+        const resolvedUrl = new URL(requestUrl, window.location.href);
+        isSameOrigin = resolvedUrl.origin === window.location.origin;
+    } catch (e) {
+        isSameOrigin = true;
+    }
+
+    // add guest session id only for same-origin requests
+    if (isSameOrigin) {
+        config.headers['X-Guest-Session-ID'] = getGuestSessionId();
+    }
+
     return await originalFetch(resource, config);
 };
 
