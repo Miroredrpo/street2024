@@ -155,6 +155,59 @@ img {
     padding: 0 var(--space-3);
 }
 
+/* hero */
+.hero-bg-shapes {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.hero-logo-wrap {
+    position: absolute;
+    left: 4%;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hero-logo {
+    width: min(30vw, 320px);
+    opacity: 0.12;
+    border-radius: 50%;
+    filter: grayscale(1) blur(0.2px);
+    mix-blend-mode: multiply;
+    transform: rotate(-8deg);
+    animation: heroFloat 5.5s ease-in-out infinite;
+}
+
+@keyframes heroFloat {
+    0% {
+        transform: translate3d(0, 2px, 0) rotate(-9deg) scale(1);
+    }
+    35% {
+        transform: translate3d(0, -10px, 0) rotate(-7deg) scale(1.01);
+    }
+    60% {
+        transform: translate3d(0, -6px, 0) rotate(-8deg) scale(1.005);
+    }
+    100% {
+        transform: translate3d(0, 2px, 0) rotate(-9deg) scale(1);
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-logo-wrap {
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .hero-logo {
+        width: 56vw;
+        opacity: 0.1;
+    }
+}
+
 /* navbar */
 .navbar {
     position: sticky;
