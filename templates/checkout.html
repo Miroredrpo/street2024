@@ -395,6 +395,44 @@
         return data || {};
     }
 
+    async function fetchSignedUploadOptions(uploadType) {
+        const res = await fetch('/api/cloudinary-signature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Guest-Session-ID': getGuestSessionId()
+            },
+            body: JSON.stringify({ upload_type: uploadType })
+        });
+
+        const data = await parseUploadResponse(res);
+        if (!data.cloud_name || !data.api_key || !data.signature || !data.timestamp) {
+            throw new Error('Upload signing failed.');
+        }
+        return data;
+    }
+
+    async function uploadImageToCloudinary(file, uploadType) {
+        const signed = await fetchSignedUploadOptions(uploadType);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', signed.api_key);
+        formData.append('timestamp', signed.timestamp);
+        formData.append('signature', signed.signature);
+        if (signed.folder) formData.append('folder', signed.folder);
+
+        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloud_name}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const uploadData = await parseUploadResponse(uploadRes);
+        if (!uploadData.secure_url) {
+            throw new Error('Upload failed: missing Cloudinary URL.');
+        }
+        return uploadData.secure_url;
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
         // wait for auth init
         setTimeout(loadCheckoutData, 500); 
@@ -805,25 +843,12 @@
                 }
                 
                 btn.textContent = 'Uploading Receipt...';
-                const formData = new FormData();
                 try {
                     const uploadFile = await prepareUploadFile(fileInput.files[0], {
                         maxWidth: 1400,
                         maxHeight: 1400
                     });
-                    formData.append('file', uploadFile);
-                    formData.append('upload_type', 'receipt');
-
-                    const uploadRes = await fetch('/api/upload', {
-                        method: 'POST',
-                        headers: {
-                            'X-Guest-Session-ID': getGuestSessionId()
-                        },
-                        body: formData
-                    });
-
-                    const uploadData = await parseUploadResponse(uploadRes);
-                    paymentReceiptUrl = uploadData.url;
+                    paymentReceiptUrl = await uploadImageToCloudinary(uploadFile, 'receipt');
                 } catch (up_err) {
                     alert('Error uploading receipt: ' + up_err.message);
                     btn.disabled = false;

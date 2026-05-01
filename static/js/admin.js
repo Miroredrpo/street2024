@@ -98,6 +98,45 @@
         return data || {};
     }
 
+    async function fetchSignedUploadOptions(uploadType) {
+        const { data: { session } } = await sb.auth.getSession();
+        const res = await fetch('/api/cloudinary-signature', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ upload_type: uploadType })
+        });
+
+        const data = await parseUploadResponse(res);
+        if (!data.cloud_name || !data.api_key || !data.signature || !data.timestamp) {
+            throw new Error('Upload signing failed.');
+        }
+        return data;
+    }
+
+    async function uploadImageToCloudinary(file, uploadType) {
+        const signed = await fetchSignedUploadOptions(uploadType);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', signed.api_key);
+        formData.append('timestamp', signed.timestamp);
+        formData.append('signature', signed.signature);
+        if (signed.folder) formData.append('folder', signed.folder);
+
+        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloud_name}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const uploadData = await parseUploadResponse(uploadRes);
+        if (!uploadData.secure_url) {
+            throw new Error('Upload failed: missing Cloudinary URL.');
+        }
+        return uploadData.secure_url;
+    }
+
     // dom
     const loginWrapper = document.getElementById('admin-login');
     const adminApp = document.getElementById('admin-app');
@@ -320,23 +359,12 @@
 
         let imageUrl = '';
         if (imageEl && imageEl.files && imageEl.files.length > 0) {
-            const formData = new FormData();
             try {
                 const uploadFile = await prepareUploadFile(imageEl.files[0], {
                     maxWidth: 1000,
                     maxHeight: 1000
                 });
-                formData.append('file', uploadFile);
-                formData.append('upload_type', 'feedback');
-
-                const { data: { session } } = await window.supabaseClient.auth.getSession();
-                const uploadRes = await fetch('/api/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${session.access_token}` },
-                    body: formData
-                });
-                const uploadData = await parseUploadResponse(uploadRes);
-                imageUrl = uploadData.url;
+                imageUrl = await uploadImageToCloudinary(uploadFile, 'feedback');
             } catch (err) {
                 showToast(`Image upload error: ${err.message}`, 'error');
                 return;
@@ -545,23 +573,12 @@
         
         // upload if selected
         if (fileInput.files.length > 0) {
-            const formData = new FormData();
             try {
                 const uploadFile = await prepareUploadFile(fileInput.files[0], {
                     maxWidth: 2000,
                     maxHeight: 2000
                 });
-                formData.append('file', uploadFile);
-                formData.append('upload_type', 'product');
-
-                const { data: { session } } = await window.supabaseClient.auth.getSession();
-                const uploadRes = await fetch('/api/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${session.access_token}` },
-                    body: formData
-                });
-                const uploadData = await parseUploadResponse(uploadRes);
-                finalImageUrl = uploadData.url;
+                finalImageUrl = await uploadImageToCloudinary(uploadFile, 'product');
             } catch (err) {
                 showToast(`Image upload error: ${err.message}`, 'error');
                 btn.textContent = originalText;
@@ -581,22 +598,13 @@
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             
             for (let i = 0; i < otherFileInput.files.length; i++) {
-                const formData = new FormData();
                 try {
                     const uploadFile = await prepareUploadFile(otherFileInput.files[i], {
                         maxWidth: 2000,
                         maxHeight: 2000
                     });
-                    formData.append('file', uploadFile);
-                    formData.append('upload_type', 'product');
-
-                    const uploadRes = await fetch('/api/upload', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${session.access_token}` },
-                        body: formData
-                    });
-                    const uploadData = await parseUploadResponse(uploadRes);
-                    finalOtherImages.push(uploadData.url);
+                    const imageUrl = await uploadImageToCloudinary(uploadFile, 'product');
+                    finalOtherImages.push(imageUrl);
                 } catch (err) {
                     showToast(`Other image upload error: ${err.message}`, 'error');
                     btn.textContent = originalText;
@@ -613,23 +621,12 @@
             finalSizeChartUrl = sizeChartNote.dataset.url;
         }
         if (sizeChartInput && sizeChartInput.files.length > 0) {
-            const formData = new FormData();
             try {
                 const uploadFile = await prepareUploadFile(sizeChartInput.files[0], {
                     maxWidth: 900,
                     maxHeight: 900
                 });
-                formData.append('file', uploadFile);
-                formData.append('upload_type', 'size_chart');
-
-                const { data: { session } } = await window.supabaseClient.auth.getSession();
-                const uploadRes = await fetch('/api/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${session.access_token}` },
-                    body: formData
-                });
-                const uploadData = await parseUploadResponse(uploadRes);
-                finalSizeChartUrl = uploadData.url;
+                finalSizeChartUrl = await uploadImageToCloudinary(uploadFile, 'size_chart');
             } catch (err) {
                 showToast(`Size chart upload error: ${err.message}`, 'error');
                 btn.textContent = originalText;

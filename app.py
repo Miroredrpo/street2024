@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
+import cloudinary.utils
 
 load_dotenv()
 
@@ -122,6 +123,17 @@ def cloudinary_public_id_from_url(url):
         return tail or None
     except Exception:
         return None
+
+
+def get_upload_folder(upload_type):
+    upload_type = (upload_type or "product").strip().lower()
+    if upload_type == "receipt":
+        return "receipts"
+    if upload_type == "size_chart":
+        return "size_charts"
+    if upload_type == "feedback":
+        return "feedback"
+    return "products"
 
 
 # storefront routes
@@ -1213,6 +1225,41 @@ def upload_image():
         return jsonify({"url": upload_result.get("secure_url")}), 200
     except Exception as e:
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
+
+
+@app.route("/api/cloudinary-signature", methods=["POST"])
+def get_cloudinary_signature():
+    session_id = request.headers.get("X-Guest-Session-ID")
+    if not session_id:
+        user = get_user_from_token(request)
+        if not user or not is_admin(user.id):
+            return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json or {}
+    upload_type = data.get("upload_type")
+
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    api_key = os.getenv("CLOUDINARY_API_KEY", "")
+    api_secret = os.getenv("CLOUDINARY_API_SECRET", "")
+    if not cloud_name or not api_key or not api_secret:
+        return jsonify({"error": "Cloudinary is not configured"}), 500
+
+    timestamp = int(datetime.now(timezone.utc).timestamp())
+    folder = get_upload_folder(upload_type)
+
+    params_to_sign = {
+        "folder": folder,
+        "timestamp": timestamp
+    }
+    signature = cloudinary.utils.api_sign_request(params_to_sign, api_secret)
+
+    return jsonify({
+        "cloud_name": cloud_name,
+        "api_key": api_key,
+        "timestamp": timestamp,
+        "signature": signature,
+        "folder": folder
+    }), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
