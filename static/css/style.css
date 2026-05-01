@@ -198,8 +198,8 @@ img {
 
 @media (max-width: 768px) {
     .hero-logo-wrap {
-        left: 5%;
-        bottom: 8%;
+        left: -4%;
+        bottom: -4%;
         top: auto;
         transform: none;
     }
