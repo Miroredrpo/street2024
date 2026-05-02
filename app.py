@@ -242,7 +242,8 @@ def add_guest_session_cookie(response):
 
 @app.route("/favicon.ico")
 def favicon():
-    return "", 204
+    return send_from_directory(os.path.join(app.root_path, 'static', 'img'),
+                               'logo.png', mimetype='image/png')
 
 @app.route("/robots.txt")
 def robots():
