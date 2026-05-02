@@ -922,14 +922,34 @@ html.dark-mode .hero-logo {
 }
 
 @media (max-width: 768px) {
+    .pdp-details {
+        display: flex;
+        flex-direction: column;
+    }
     .pdp-size-chart {
-        position: static;
+        position: relative;
         width: 100%;
-        height: 200px;
-        margin-bottom: var(--space-3);
+        height: auto;
+        min-height: 150px;
+        margin-top: var(--space-4);
+        margin-bottom: var(--space-2);
         transform: none;
         right: auto;
         top: auto;
+        order: 1; /* Pushes the size chart below main details */
+    }
+    .pdp-size-chart img {
+        width: 100%;
+        height: 260px;
+        object-fit: cover;
+        object-position: center;
+    }
+    .size-chart-pin {
+        top: 8px;
+        right: 8px;
+    }
+    .pdp-reviews {
+        order: 2; /* Ensures reviews stay at the very bottom */
     }
 }
 

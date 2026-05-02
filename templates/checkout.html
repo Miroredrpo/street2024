@@ -533,13 +533,8 @@
                 return;
             }
 
-            const { data: cartData, error } = await window.supabaseClient
-                .from('cart_items')
-                .select('*, products(*)')
-                .eq('session_id', sessionId);
+            const cartData = await window.apiFetch('/api/cart');
             
-            if (error) throw error;
-
             checkoutCartItems = cartData;
             renderCheckoutItems();
         } catch (e) {
