@@ -933,6 +933,17 @@ html.dark-mode .hero-logo {
     }
 }
 
+@media (min-width: 769px) {
+    .pdp-size-chart ~ .pdp-breadcrumb,
+    .pdp-size-chart ~ .pdp-title,
+    .pdp-size-chart ~ .pdp-price,
+    .pdp-size-chart ~ .pdp-stock,
+    .pdp-size-chart ~ .pdp-description {
+        padding-right: 220px;
+        word-break: break-word;
+    }
+}
+
 .pdp-breadcrumb {
     display: flex;
     align-items: center;
