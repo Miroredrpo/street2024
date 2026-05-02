@@ -8,6 +8,7 @@
         background: var(--bg-secondary);
         padding: 2rem 0 3rem;
     }
+
     .checkout-container {
         max-width: 1200px;
         margin: 0 auto;
@@ -17,28 +18,39 @@
         gap: 2.5rem;
         align-items: start;
     }
+
     @media (max-width: 768px) {
         .checkout-container {
             grid-template-columns: 1fr;
             gap: 1rem;
         }
+
         .checkout-section {
             padding: 1.25rem;
         }
-        .checkout-form-panel { order: 2; }
-        .checkout-summary-panel { order: 1; }
+
+        .checkout-form-panel {
+            order: 2;
+        }
+
+        .checkout-summary-panel {
+            order: 1;
+        }
     }
+
     .checkout-section {
         background: var(--bg-primary);
         padding: 2.25rem;
         border-radius: 12px;
         box-shadow: var(--shadow-md);
     }
+
     .checkout-title {
         font-size: 1.5rem;
         font-family: 'Playfair Display', serif;
         margin-bottom: 1.5rem;
     }
+
     .order-summary-item {
         display: flex;
         justify-content: space-between;
@@ -46,6 +58,7 @@
         padding-bottom: 1rem;
         border-bottom: 1px solid var(--border);
     }
+
     .order-summary-item img {
         width: 50px;
         height: 50px;
@@ -53,12 +66,15 @@
         border-radius: 4px;
         margin-right: 1rem;
     }
+
     .item-details {
         flex: 1;
     }
+
     .item-price {
         font-weight: bold;
     }
+
     .total-row {
         display: flex;
         justify-content: space-between;
@@ -68,29 +84,40 @@
         padding-top: 1rem;
         border-top: 2px solid #333;
     }
+
     .discount-row {
         display: flex;
         justify-content: space-between;
         color: var(--success);
         margin-top: 0.5rem;
     }
+
     .coupon-section {
         margin-top: 2rem;
         display: flex;
         gap: 0.5rem;
     }
+
     .coupon-section input {
         flex: 1;
         padding: 0.75rem;
         border: 1px solid var(--border);
         border-radius: 4px;
     }
+
     .coupon-message {
         margin-top: 0.5rem;
         font-size: 0.9rem;
     }
-    .success { color: var(--success); }
-    .error { color: var(--error); }
+
+    .success {
+        color: var(--success);
+    }
+
+    .error {
+        color: var(--error);
+    }
+
     #shipping-address {
         width: 100%;
         padding: 0.75rem;
@@ -98,201 +125,226 @@
         border-radius: 4px;
         margin-bottom: 1rem;
     }
+
     @media (max-width: 768px) {
-        .checkout-container { grid-template-columns: 1fr; }
+        .checkout-container {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <div class="checkout-page">
-<div class="checkout-container">
-    <!-- form -->
-    <div class="checkout-section checkout-form-panel">
-        <h2 class="checkout-title">1. Customer Details</h2>
-        <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
-            <div style="flex: 1;">
-                <label for="full-name">Full Name *</label>
-                <input type="text" id="full-name" placeholder="Full name" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-            </div>
-            <div style="flex: 1;">
-                <label for="email-address">Email Address *</label>
-                <input type="email" id="email-address" placeholder="you@example.com" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-            </div>
-        </div>
-
-        <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
-            <div style="flex: 1;">
-                <label for="instagram-username">Instagram Username *</label>
-                <input type="text" id="instagram-username" placeholder="username (without @)" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-            </div>
-            <div style="flex: 1;">
-                <label for="contact-number">Contact Number *</label>
-                <input type="tel" id="contact-number" placeholder="Enter 10-digit number" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-            </div>
-        </div>
-
-        <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
-            <div style="flex: 1;">
-                <label for="alt-contact-number">Alternate Number (Optional)</label>
-                <input type="tel" id="alt-contact-number" placeholder="Optional 10-digit number" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-            </div>
-            <div style="flex: 1;"></div>
-        </div>
-
-        <h2 class="checkout-title" style="margin-top: 2rem;">2. Shipping Information</h2>
-
-        <div class="form-group row" style="display: flex; gap: var(--space-4);">
-            <div style="flex: 1;">
-                <label for="country">Country</label>
-                <select id="country" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-                    <option value="">Select your country</option>
-                    <option value="Nepal">Nepal</option>
-                    <option value="India">India</option>
-                </select>
-            </div>
-            <div style="flex: 1;"></div>
-        </div>
-
-        <div id="nepal-fields" style="display: none;">
-            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
+    <div class="checkout-container">
+        <!-- form -->
+        <div class="checkout-section checkout-form-panel">
+            <h2 class="checkout-title">1. Customer Details</h2>
+            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
                 <div style="flex: 1;">
-                    <label for="nepal-zone">Delivery Area</label>
-                    <select id="nepal-zone" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-                        <option value="">Select area</option>
-                        <option value="inside_valley">Inside Valley</option>
-                        <option value="outside_valley">Outside Valley</option>
+                    <label for="full-name">Full Name *</label>
+                    <input type="text" id="full-name" placeholder="Full name" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                </div>
+                <div style="flex: 1;">
+                    <label for="email-address">Email Address *</label>
+                    <input type="email" id="email-address" placeholder="you@example.com"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                </div>
+            </div>
+
+            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                    <label for="instagram-username">Instagram Username *</label>
+                    <input type="text" id="instagram-username" placeholder="username (without @)" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                </div>
+                <div style="flex: 1;">
+                    <label for="contact-number">Contact Number *</label>
+                    <input type="tel" id="contact-number" placeholder="Enter 10-digit number" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                </div>
+            </div>
+
+            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                    <label for="alt-contact-number">Alternate Number (Optional)</label>
+                    <input type="tel" id="alt-contact-number" placeholder="Optional 10-digit number"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                </div>
+                <div style="flex: 1;"></div>
+            </div>
+
+            <h2 class="checkout-title" style="margin-top: 2rem;">2. Shipping Information</h2>
+
+            <div class="form-group row" style="display: flex; gap: var(--space-4);">
+                <div style="flex: 1;">
+                    <label for="country">Country</label>
+                    <select id="country" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                        <option value="">Select your country</option>
+                        <option value="Nepal">Nepal</option>
+                        <option value="India">India</option>
                     </select>
                 </div>
                 <div style="flex: 1;"></div>
             </div>
 
+            <div id="nepal-fields" style="display: none;">
+                <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
+                    <div style="flex: 1;">
+                        <label for="nepal-zone">Delivery Area</label>
+                        <select id="nepal-zone"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                            <option value="">Select area</option>
+                            <option value="inside_valley">Inside Valley</option>
+                            <option value="outside_valley">Outside Valley</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;"></div>
+                </div>
+
+                <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
+                    <div style="flex: 1;">
+                        <label for="province">Province</label>
+                        <select id="province"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                            <option value="">Select Province</option>
+                            <option value="Koshi">Koshi</option>
+                            <option value="Madhesh">Madhesh</option>
+                            <option value="Bagmati">Bagmati</option>
+                            <option value="Gandaki">Gandaki</option>
+                            <option value="Lumbini">Lumbini</option>
+                            <option value="Karnali">Karnali</option>
+                            <option value="Sudurpashchim">Sudurpashchim</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="district">District</label>
+                        <input type="text" id="district" placeholder="e.g. Kathmandu"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="india-fields" style="display: none;">
+                <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
+                    <div style="flex: 1;">
+                        <label for="state">State</label>
+                        <input type="text" id="state" placeholder="e.g. West Bengal"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="zipcode">Zip Code</label>
+                        <input type="text" id="zipcode" placeholder="e.g. 700001"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
                 <div style="flex: 1;">
-                    <label for="province">Province</label>
-                    <select id="province" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-                        <option value="">Select Province</option>
-                        <option value="Koshi">Koshi</option>
-                        <option value="Madhesh">Madhesh</option>
-                        <option value="Bagmati">Bagmati</option>
-                        <option value="Gandaki">Gandaki</option>
-                        <option value="Lumbini">Lumbini</option>
-                        <option value="Karnali">Karnali</option>
-                        <option value="Sudurpashchim">Sudurpashchim</option>
-                    </select>
+                    <label for="shipping-address">Location / Delivery Address</label>
+                    <input type="text" id="shipping-address" placeholder="e.g. New Road, Ward 22"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
                 </div>
-                <div style="flex: 1;">
-                    <label for="district">District</label>
-                    <input type="text" id="district" placeholder="e.g. Kathmandu" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-                </div>
+                <div style="flex: 1;"></div>
             </div>
 
-        </div>
 
-        <div id="india-fields" style="display: none;">
-            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
-                <div style="flex: 1;">
-                    <label for="state">State</label>
-                    <input type="text" id="state" placeholder="e.g. West Bengal" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="custom-message">Custom Message (Optional)</label>
+                <textarea id="custom-message"
+                    placeholder="Notes about your order, e.g., special notes for delivery, packaging..."
+                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <h3>Payment Option</h3>
+                <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="payment_method" value="fonepay" checked onchange="togglePayment()">
+                        Fonepay
+                    </label>
                 </div>
-                <div style="flex: 1;">
-                    <label for="zipcode">Zip Code</label>
-                    <input type="text" id="zipcode" placeholder="e.g. 700001" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-                </div>
-            </div>
-        </div>
 
-        <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
-            <div style="flex: 1;">
-                <label for="shipping-address">Location / Delivery Address</label>
-                <input type="text" id="shipping-address" placeholder="e.g. New Road, Ward 22" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
-            </div>
-            <div style="flex: 1;"></div>
-        </div>
-
-
-        <div class="form-group" style="margin-top: 1rem;">
-            <label for="custom-message">Custom Message (Optional)</label>
-            <textarea id="custom-message" placeholder="Notes about your order, e.g., special notes for delivery, packaging..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>
-        </div>
-        
-        <div style="margin-top: 2rem;">
-            <h3>Payment Option</h3>
-            <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
-                <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    <input type="radio" name="payment_method" value="fonepay" checked onchange="togglePayment()"> Fonepay
-                </label>
-            </div>
-            
-            <div id="online-payment-details" style="display: none; padding: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface);">
-                <p style="margin-bottom: 1rem; text-align: center;">
-                    <img id="qr-code-img" src="/static/img/image.png" alt="Scan to Pay" style="border-radius: 8px; box-shadow: var(--shadow-sm);">
-                </p>
-                <p style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Please scan the QR code to pay, then upload your receipt below to confirm.</p>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="payment-receipt" style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Upload Payment Receipt *</label>
-                    <input type="file" id="payment-receipt" accept="image/*" style="width: 100%; border: 1px solid var(--border); padding: 0.5rem; border-radius: 4px;">
+                <div id="online-payment-details"
+                    style="display: none; padding: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface);">
+                    <p style="margin-bottom: 1rem; text-align: center;">
+                        <img id="qr-code-img" src="/static/img/image.png" alt="Scan to Pay"
+                            style="border-radius: 8px; box-shadow: var(--shadow-sm);">
+                    </p>
+                    <p style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Please scan the QR code to
+                        pay, then upload your receipt below to confirm.</p>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="payment-receipt"
+                            style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Upload Payment Receipt
+                            *</label>
+                        <input type="file" id="payment-receipt" accept="image/*"
+                            style="width: 100%; border: 1px solid var(--border); padding: 0.5rem; border-radius: 4px;">
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <script>
-        function togglePayment() {
-            const method = document.querySelector('input[name="payment_method"]:checked').value;
-            const isFonepay = method === 'fonepay';
-            const detailsDiv = document.getElementById('online-payment-details');
-            const qrImg = document.getElementById('qr-code-img');
-            
-            detailsDiv.style.display = isFonepay ? 'block' : 'none';
-            document.getElementById('payment-receipt').required = isFonepay;
+            <script>
+                function togglePayment() {
+                    const method = document.querySelector('input[name="payment_method"]:checked').value;
+                    const isFonepay = method === 'fonepay';
+                    const detailsDiv = document.getElementById('online-payment-details');
+                    const qrImg = document.getElementById('qr-code-img');
 
-            if (isFonepay) {
-                if (window.showToast) {
-                    window.showToast("Please pay the checkout price to the QR code, or the item may not be delivered.", "info");
-                } else {
-                    alert("Please pay the checkout price to the QR code, or the item may not be delivered.");
+                    detailsDiv.style.display = isFonepay ? 'block' : 'none';
+                    document.getElementById('payment-receipt').required = isFonepay;
+
+                    if (isFonepay) {
+                        if (window.showToast) {
+                            window.showToast("Please pay the checkout price to the QR code, or the item may not be delivered.", "info");
+                        } else {
+                            alert("Please pay the checkout price to the QR code, or the item may not be delivered.");
+                        }
+                    }
+
+                    if (isFonepay && qrImg) {
+                        qrImg.src = "/static/img/image.png";
+                    }
                 }
-            }
+            </script>
 
-            if (isFonepay && qrImg) {
-                qrImg.src = "/static/img/image.png";
-            }
-        }
-        </script>
-        
-        <button id="place-order-btn" class="btn btn-primary" style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1.1rem;" onclick="processCheckout()">
-            Place Order
-        </button>
-    </div>
-
-    <!-- summary -->
-    <div class="checkout-section checkout-summary-panel">
-        <h2 class="checkout-title">1. Order Summary</h2>
-        <div id="checkout-items">
-            <!-- items via js -->
-            <p>Loading your cart...</p>
-        </div>
-        
-        <div class="coupon-section">
-            <input type="text" id="coupon-code" placeholder="Enter coupon code">
-            <button class="btn btn-outline" onclick="applyCoupon()">Apply</button>
-        </div>
-        <div id="coupon-message" class="coupon-message"></div>
-
-        <div id="discount-row" class="discount-row" style="display: none;">
-            <span>Discount (<span id="discount-percent"></span>%)</span>
-            <span id="discount-amount">-Rs. 0</span>
+            <button id="place-order-btn" class="btn btn-primary"
+                style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1.1rem;" onclick="processCheckout()">
+                Place Order
+            </button>
         </div>
 
-        <div id="shipping-row" class="order-summary-item" style="display: none;">
-            <span>Delivary Charge</span>
-            <span id="shipping-amount">Rs. 0</span>
-        </div>
-        
-        <div class="total-row">
-            <span>Total to pay</span>
-            <span id="checkout-total">Rs. 0</span>
+        <!-- summary -->
+        <div class="checkout-section checkout-summary-panel">
+            <h2 class="checkout-title">1. Order Summary</h2>
+            <div id="checkout-items">
+                <!-- items via js -->
+                <p>Loading your cart...</p>
+            </div>
+
+            <div class="coupon-section">
+                <input type="text" id="coupon-code" placeholder="Enter coupon code">
+                <button class="btn btn-outline" onclick="applyCoupon()">Apply</button>
+            </div>
+            <div id="coupon-message" class="coupon-message"></div>
+
+            <div id="discount-row" class="discount-row" style="display: none;">
+                <span>Discount (<span id="discount-percent"></span>%)</span>
+                <span id="discount-amount">-Rs. 0</span>
+            </div>
+
+            <div id="shipping-row" class="order-summary-item" style="display: none;">
+                <span>Delivary Charge</span>
+                <span id="shipping-amount">Rs. 0</span>
+            </div>
+
+            <div class="total-row">
+                <span>Total to pay</span>
+                <span id="checkout-total">Rs. 0</span>
+            </div>
         </div>
     </div>
-</div>
 </div>
 
 <script>
@@ -301,8 +353,8 @@
     let appliedCoupon = null;
     let shippingRates = [];
     let selectedShipping = { id: null, country: '', zone: '', costNpr: 0, costInr: 0 };
-    const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
-    const TARGET_UPLOAD_BYTES = 5 * 1024 * 1024;
+    const MAX_UPLOAD_BYTES = 600 * 1024;
+    const TARGET_UPLOAD_BYTES = 400 * 1024;
 
     function loadImageFromFile(file) {
         return new Promise((resolve, reject) => {
@@ -449,7 +501,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
         // wait for auth init
-        setTimeout(loadCheckoutData, 500); 
+        setTimeout(loadCheckoutData, 500);
 
         const currencySelect = document.getElementById('currency-select');
         if (currencySelect) {
@@ -534,7 +586,7 @@
             }
 
             const cartData = await window.apiFetch('/api/cart');
-            
+
             checkoutCartItems = cartData;
             renderCheckoutItems();
         } catch (e) {
@@ -545,7 +597,7 @@
 
     function renderCheckoutItems() {
         const container = document.getElementById('checkout-items');
-        
+
         if (!checkoutCartItems || checkoutCartItems.length === 0) {
             container.innerHTML = '<p>Your cart is empty.</p>';
             document.getElementById('place-order-btn').disabled = true;
@@ -558,7 +610,7 @@
         checkoutCartItems.forEach(item => {
             const prod = item.products;
             if (!prod) return;
-            
+
             const unitPrice = getUnitPrice(prod);
             const lineTotal = unitPrice * item.quantity;
             checkoutTotal += lineTotal;
@@ -631,7 +683,7 @@
 
     function startCheckoutTimers() {
         if (checkoutTimerInterval) clearInterval(checkoutTimerInterval);
-        
+
         function updateTimers() {
             const timers = document.querySelectorAll('.checkout-item-timer');
             let needRefresh = false;
@@ -642,7 +694,7 @@
                     timer.textContent = '';
                     return;
                 }
-                
+
                 const now = new Date();
                 const expiry = new Date(expiresAt.replace(/\+00:00$/, 'Z'));
                 if (Number.isNaN(expiry.getTime())) {
@@ -666,7 +718,7 @@
                 loadCheckoutData();
             }
         }
-        
+
         updateTimers();
         checkoutTimerInterval = setInterval(updateTimers, 1000);
     }
@@ -738,7 +790,7 @@
     async function applyCoupon() {
         const codeInput = document.getElementById('coupon-code').value.trim();
         const msgEl = document.getElementById('coupon-message');
-        
+
         msgEl.textContent = 'Verifying...';
         msgEl.className = 'coupon-message';
 
@@ -797,7 +849,7 @@
         const province = document.getElementById('province').value;
         const district = document.getElementById('district').value.trim();
         const nepalZone = document.getElementById('nepal-zone') ? document.getElementById('nepal-zone').value : '';
-        
+
         const instagramUsername = instagramRaw.replace(/@/g, '');
 
         if (!fullName || !instagramUsername || !country || !address || !contactNumber) {
@@ -843,19 +895,19 @@
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             let paymentReceiptUrl = null;
             const paymentMethodStr = document.querySelector('input[name="payment_method"]:checked').value;
-            
+
             if (paymentMethodStr === 'fonepay') {
                 const fileInput = document.getElementById('payment-receipt');
                 if (!fileInput.files.length) {
                     alert("Please upload your payment receipt before submitting.");
                     return;
                 }
-                
+
                 btn.textContent = 'Uploading Receipt...';
                 try {
                     const uploadFile = await prepareUploadFile(fileInput.files[0], {
-                        maxWidth: 1400,
-                        maxHeight: 1400
+                        maxWidth: 900,
+                        maxHeight: 1200
                     });
                     paymentReceiptUrl = await uploadImageToCloudinary(uploadFile, 'receipt');
                 } catch (up_err) {
@@ -865,9 +917,9 @@
                     return;
                 }
             }
-            
+
             btn.textContent = 'Processing...';
-            
+
             const payload = {
                 full_name: fullName,
                 email: emailAddress,

@@ -4,8 +4,8 @@
     const sb = window.supabaseClient;
     let adminUser = null;
     let catalogsCache = [];
-    const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
-    const TARGET_UPLOAD_BYTES = 5 * 1024 * 1024;
+    const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+    const TARGET_UPLOAD_BYTES = 4 * 1024 * 1024;
 
     function loadImageFromFile(file) {
         return new Promise((resolve, reject) => {

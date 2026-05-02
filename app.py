@@ -294,8 +294,12 @@ def checkout_page():
     return render_template("checkout.html")
 
 
-# cart hold cleanup
-def cleanup_expired_holds():
+import threading
+_cleanup_lock = threading.Lock()
+
+def _cleanup_task():
+    if not _cleanup_lock.acquire(blocking=False):
+        return
     try:
         now_str = datetime.now(timezone.utc).isoformat()
         # delete expired holds atomically
@@ -314,6 +318,11 @@ def cleanup_expired_holds():
 
     except Exception as e:
         print("Cleanup error:", e)
+    finally:
+        _cleanup_lock.release()
+
+def cleanup_expired_holds():
+    threading.Thread(target=_cleanup_task, daemon=True).start()
 
 # public api: products
 
@@ -430,7 +439,15 @@ def get_cart():
         return jsonify({"error": "Unauthorized"}), 401
     try:
         res = supabase_admin.table("cart_items").select("*, products(*)").eq("session_id", session_id).execute()
-        return jsonify(res.data), 200
+        now = datetime.now(timezone.utc)
+        valid_data = []
+        for item in res.data:
+            if item.get("expires_at"):
+                exp = datetime.fromisoformat(item["expires_at"].replace("Z", "+00:00"))
+                if exp < now:
+                    continue
+            valid_data.append(item)
+        return jsonify(valid_data), 200
     except Exception as e:
         return jsonify({"error": f"An unknown error occurred: {str(e)}"}), 500
 
@@ -657,10 +674,19 @@ def place_order():
     try:
         # get cart
         cart_res = supabase_admin.table("cart_items").select("*, products(*)").eq("session_id", session_id).execute()
-        if not cart_res.data:
+        now = datetime.now(timezone.utc)
+        valid_items = []
+        for item in cart_res.data:
+            if item.get("expires_at"):
+                exp = datetime.fromisoformat(item["expires_at"].replace("Z", "+00:00"))
+                if exp < now:
+                    continue
+            valid_items.append(item)
+            
+        if not valid_items:
             return jsonify({"error": "Cart is empty"}), 400
             
-        cart_items = cart_res.data
+        cart_items = valid_items
         total_amount = 0.0
         for item in cart_items:
             product = item['products']
