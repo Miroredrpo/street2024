@@ -82,6 +82,21 @@
         return compressed;
     }
 
+    function getUploadErrorMessage(data, statusMsg) {
+        if (!data) return statusMsg;
+        const candidate = data.error || data.message || data.detail || data;
+        if (typeof candidate === 'string') return candidate;
+        if (candidate && typeof candidate === 'object') {
+            if (typeof candidate.message === 'string') return candidate.message;
+            try {
+                return JSON.stringify(candidate);
+            } catch (err) {
+                return statusMsg;
+            }
+        }
+        return statusMsg;
+    }
+
     async function parseUploadResponse(response) {
         let data = null;
         try {
@@ -92,7 +107,7 @@
 
         if (!response.ok) {
             const statusMsg = `Upload failed (Status: ${response.status}).`;
-            throw new Error(data?.error || statusMsg);
+            throw new Error(getUploadErrorMessage(data, statusMsg));
         }
 
         return data || {};
@@ -124,7 +139,6 @@
         formData.append('timestamp', signed.timestamp);
         formData.append('signature', signed.signature);
         if (signed.folder) formData.append('folder', signed.folder);
-        if (signed.max_file_size) formData.append('max_file_size', signed.max_file_size);
 
         const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloud_name}/image/upload`, {
             method: 'POST',

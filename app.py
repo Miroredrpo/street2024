@@ -1362,8 +1362,7 @@ def get_cloudinary_signature():
 
     params_to_sign = {
         "folder": folder,
-        "timestamp": timestamp,
-        "max_file_size": constraints["max_file_size"]
+        "timestamp": timestamp
     }
     signature = cloudinary.utils.api_sign_request(params_to_sign, api_secret)
 
