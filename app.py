@@ -661,7 +661,18 @@ def place_order():
             return jsonify({"error": "Cart is empty"}), 400
             
         cart_items = cart_res.data
-        total_amount = sum([item['quantity'] * float(item['products']['price']) for item in cart_items])
+        total_amount = 0.0
+        for item in cart_items:
+            product = item['products']
+            if currency == 'INR':
+                base_price = float(product.get('price_inr') or product.get('price') or 0)
+                sale = float(product.get('sale_price_inr') or 0)
+            else:
+                base_price = float(product.get('price') or 0)
+                sale = float(product.get('sale_price') or 0)
+            effective_price = sale if sale > 0 else base_price
+            total_amount += item['quantity'] * effective_price
+            item['effective_price'] = effective_price
         
         # apply discount
         discount_percentage = 0
@@ -741,7 +752,7 @@ def place_order():
                 "product_id": item['product_id'],
                 "size": item.get('size'),
                 "quantity": item['quantity'],
-                "price_at_time": item['products']['price']
+                "price_at_time": item.get('effective_price', item['products']['price'])
             })
             
         supabase_admin.table("order_items").insert(order_items_data).execute()

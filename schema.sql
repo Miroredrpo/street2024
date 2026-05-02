@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS public.cart_items (
   quantity INTEGER NOT NULL DEFAULT 1,
   added_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   expires_at TIMESTAMP WITH TIME ZONE,
-  UNIQUE(session_id, product_id)
+  UNIQUE NULLS NOT DISTINCT (session_id, product_id, size)
 );
 
 -- rls
@@ -348,5 +348,12 @@ BEGIN
       ALTER TABLE public.customer_feedback ADD COLUMN reviewer_name TEXT;
     EXCEPTION
       WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.cart_items DROP CONSTRAINT IF EXISTS cart_items_session_id_product_id_key;
+      ALTER TABLE public.cart_items ADD CONSTRAINT cart_items_session_id_product_id_size_key UNIQUE NULLS NOT DISTINCT (session_id, product_id, size);
+    EXCEPTION
+      WHEN others THEN null;
     END;
 END $$;

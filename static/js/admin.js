@@ -740,8 +740,9 @@
             const instagram = o.instagram_username ? `@${o.instagram_username}` : '—';
             const remarks = (o.admin_remarks || '').trim();
             const remarksDisplay = remarks ? escapeHtml(remarks) : '<span style="color:var(--text-muted);">—</span>';
+            const sym = (o.currency === 'INR') ? '₹' : 'Rs. ';
             const amountDisplay = Number.isFinite(o.admin_amount)
-                ? `Rs. ${parseFloat(o.admin_amount).toFixed(2)}`
+                ? `${sym}${parseFloat(o.admin_amount).toFixed(2)}`
                 : '<span style="color:var(--text-muted);">—</span>';
 
             const tr = document.createElement('tr');
@@ -759,7 +760,7 @@
                     ${escapeHtml(o.shipping_address)}
                 </td>
                 <td data-label="Total">
-                    <strong>Rs. ${parseFloat(o.total_amount).toFixed(2)}</strong><br>
+                    <strong>${sym}${parseFloat(o.total_amount).toFixed(2)}</strong><br>
                     <small style="color:var(--text-muted);">${o.payment_method || 'COD'}</small>
                 </td>
                 <td data-label="Remarks" style="font-size: var(--font-size-sm);">${remarksDisplay}</td>
@@ -805,7 +806,7 @@
                             <div style="font-weight: 600;">${escapeHtml(product.title || 'Product')}</div>
                             <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Qty: ${item.quantity}${item.size ? ` | Size: ${escapeHtml(item.size)}` : ''}</div>
                         </div>
-                        <div style="font-weight: 600;">Rs. ${parseFloat(item.price_at_time).toFixed(2)}</div>
+                        <div style="font-weight: 600;">${order.currency === 'INR' ? '₹' : 'Rs. '}${parseFloat(item.price_at_time).toFixed(2)}</div>
                     </div>
                 `;
             }).join('');
@@ -865,7 +866,7 @@
                         <div style="margin-top: 6px;">${itemRows || '<p>No items</p>'}</div>
                     </div>
                     <div style="text-align:right; font-weight: 700;">
-                        Total: Rs. ${parseFloat(order.total_amount).toFixed(2)}
+                        Total: ${order.currency === 'INR' ? '₹' : 'Rs. '}${parseFloat(order.total_amount).toFixed(2)}
                     </div>
                 </div>
             `;

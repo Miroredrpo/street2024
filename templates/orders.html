@@ -96,7 +96,9 @@ async function loadOrdersByInstagram() {
             return;
         }
 
-        list.innerHTML = orders.map(o => `
+        list.innerHTML = orders.map(o => {
+            const sym = (o.currency === 'INR') ? '₹' : 'Rs. ';
+            return `
             <div class="order-card">
                 <div class="order-header">
                     <div>
@@ -105,7 +107,7 @@ async function loadOrdersByInstagram() {
                     </div>
                     <div style="text-align: right;">
                         <div class="order-status status-${o.status}">${o.status}</div>
-                        <div style="margin-top: 5px; font-weight: bold;">Rs. ${parseFloat(o.total_amount).toFixed(2)}</div>
+                        <div style="margin-top: 5px; font-weight: bold;">${sym}${parseFloat(o.total_amount).toFixed(2)}</div>
                     </div>
                 </div>
                 
@@ -120,7 +122,7 @@ async function loadOrdersByInstagram() {
                                 </div>
                             </div>
                             <div style="font-weight: 500;">
-                                Rs. ${parseFloat(item.price_at_time).toFixed(2)}
+                                ${sym}${parseFloat(item.price_at_time).toFixed(2)}
                             </div>
                         </div>
                     `).join('')}
@@ -136,7 +138,7 @@ async function loadOrdersByInstagram() {
                     <strong>Shipping To:</strong> ${escapeHtml(o.shipping_address)}
                 </div>
             </div>
-        `).join('');
+        `}).join('');
 
     } catch (err) {
         list.innerHTML = `<p style="color:var(--error)">Error loading orders: ${err.message}</p>`;
