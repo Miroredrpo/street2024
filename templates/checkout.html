@@ -19,30 +19,28 @@
         align-items: start;
     }
 
-    @media (max-width: 768px) {
-        .checkout-container {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-
-        .checkout-section {
-            padding: 1.25rem;
-        }
-
-        .checkout-form-panel {
-            order: 1;
-        }
-
-        .checkout-summary-panel {
-            order: 2;
-        }
-    }
-
     .checkout-section {
         background: var(--bg-primary);
         padding: 2.25rem;
         border-radius: 12px;
         box-shadow: var(--shadow-md);
+    }
+
+    .checkout-form-panel {
+        grid-column: 1 / 2;
+        grid-row: 1 / span 2;
+    }
+
+    .checkout-summary-panel {
+        grid-column: 2 / 3;
+        grid-row: 1;
+    }
+
+    .checkout-payment-panel {
+        grid-column: 2 / 3;
+        grid-row: 2;
+        width: 100%;
+        justify-self: stretch;
     }
 
     .checkout-title {
@@ -129,6 +127,31 @@
     @media (max-width: 768px) {
         .checkout-container {
             grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .checkout-section {
+            padding: 1.25rem;
+        }
+
+        .checkout-form-panel {
+            order: 1;
+            grid-column: 1 / -1;
+            grid-row: auto;
+        }
+
+        .checkout-summary-panel {
+            order: 2;
+            grid-column: 1 / -1;
+            grid-row: auto;
+        }
+
+        .checkout-payment-panel {
+            order: 3;
+            grid-column: 1 / -1;
+            grid-row: auto;
+            max-width: none;
+            justify-self: stretch;
         }
     }
 </style>
@@ -137,7 +160,7 @@
     <div class="checkout-container">
         <!-- form -->
         <div class="checkout-section checkout-form-panel">
-            <h2 class="checkout-title">1. Customer Details</h2>
+            <h2 class="checkout-title">1. Customer Details & Location</h2>
             <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
                 <div style="flex: 1;">
                     <label for="full-name">Full Name *</label>
@@ -173,7 +196,7 @@
                 <div style="flex: 1;"></div>
             </div>
 
-            <h2 class="checkout-title" style="margin-top: 2rem;">2. Shipping Information</h2>
+            <h2 class="checkout-title" style="margin-top: 2rem;">Shipping Information</h2>
 
             <div class="form-group row" style="display: flex; gap: var(--space-4);">
                 <div style="flex: 1;">
@@ -258,66 +281,11 @@
                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>
             </div>
 
-            <div style="margin-top: 2rem;">
-                <h3>Payment Option</h3>
-                <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
-                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="radio" name="payment_method" value="fonepay" checked onchange="togglePayment()">
-                        Fonepay
-                    </label>
-                </div>
-
-                <div id="online-payment-details"
-                    style="display: none; padding: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface);">
-                    <p style="margin-bottom: 1rem; text-align: center;">
-                        <img id="qr-code-img" src="/static/img/image.png" alt="Scan to Pay"
-                            style="border-radius: 8px; box-shadow: var(--shadow-sm);">
-                    </p>
-                    <p style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Please scan the QR code to
-                        pay, then upload your receipt below to confirm.</p>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="payment-receipt"
-                            style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Upload Payment Receipt
-                            *</label>
-                        <input type="file" id="payment-receipt" accept="image/*"
-                            style="width: 100%; border: 1px solid var(--border); padding: 0.5rem; border-radius: 4px;">
-                    </div>
-                </div>
-            </div>
-
-            <script>
-                function togglePayment() {
-                    const method = document.querySelector('input[name="payment_method"]:checked').value;
-                    const isFonepay = method === 'fonepay';
-                    const detailsDiv = document.getElementById('online-payment-details');
-                    const qrImg = document.getElementById('qr-code-img');
-
-                    detailsDiv.style.display = isFonepay ? 'block' : 'none';
-                    document.getElementById('payment-receipt').required = isFonepay;
-
-                    if (isFonepay) {
-                        if (window.showToast) {
-                            window.showToast("Please pay the checkout price to the QR code, or the item may not be delivered.", "info");
-                        } else {
-                            alert("Please pay the checkout price to the QR code, or the item may not be delivered.");
-                        }
-                    }
-
-                    if (isFonepay && qrImg) {
-                        qrImg.src = "/static/img/image.png";
-                    }
-                }
-            </script>
-
-            <button id="place-order-btn" class="btn btn-primary"
-                style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1.1rem;" onclick="processCheckout()">
-                Place Order
-            </button>
         </div>
 
         <!-- summary -->
         <div class="checkout-section checkout-summary-panel">
-            <h2 class="checkout-title">1. Order Summary</h2>
+            <h2 class="checkout-title">2. Order Summary</h2>
             <div id="checkout-items">
                 <!-- items via js -->
                 <p>Loading your cart...</p>
@@ -344,8 +312,66 @@
                 <span id="checkout-total">Rs. 0</span>
             </div>
         </div>
+
+        <div class="checkout-section checkout-payment-panel">
+            <h2 class="checkout-title">3. Payment</h2>
+            <div style="margin-top: 0.5rem;">
+                <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="payment_method" value="fonepay" checked onchange="togglePayment()">
+                        Fonepay
+                    </label>
+                </div>
+
+                <div id="online-payment-details"
+                    style="display: none; padding: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface);">
+                    <p style="margin-bottom: 1rem; text-align: center;">
+                        <img id="qr-code-img" src="/static/img/image.png" alt="Scan to Pay"
+                            style="border-radius: 8px; box-shadow: var(--shadow-sm);">
+                    </p>
+                    <p style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Please scan the QR code to
+                        pay, then upload your receipt below to confirm.</p>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="payment-receipt"
+                            style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Upload Payment Receipt
+                            *</label>
+                        <input type="file" id="payment-receipt" accept="image/*"
+                            style="width: 100%; border: 1px solid var(--border); padding: 0.5rem; border-radius: 4px;">
+                    </div>
+                </div>
+            </div>
+
+            <button id="place-order-btn" class="btn btn-primary"
+                style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1.1rem;" onclick="processCheckout()">
+                Place Order
+            </button>
+        </div>
     </div>
 </div>
+
+<script>
+    function togglePayment() {
+        const method = document.querySelector('input[name="payment_method"]:checked').value;
+        const isFonepay = method === 'fonepay';
+        const detailsDiv = document.getElementById('online-payment-details');
+        const qrImg = document.getElementById('qr-code-img');
+
+        detailsDiv.style.display = isFonepay ? 'block' : 'none';
+        document.getElementById('payment-receipt').required = isFonepay;
+
+        if (isFonepay) {
+            if (window.showToast) {
+                window.showToast("Please pay the checkout price to the QR code, or the item may not be delivered.", "info");
+            } else {
+                alert("Please pay the checkout price to the QR code, or the item may not be delivered.");
+            }
+        }
+
+        if (isFonepay && qrImg) {
+            qrImg.src = "/static/img/image.png";
+        }
+    }
+</script>
 
 <script>
     let checkoutCartItems = [];
@@ -796,6 +822,19 @@
         }
     }
 
+    function notifyUnexpectedError() {
+        if (window.notifyUnexpectedError) {
+            window.notifyUnexpectedError();
+            return;
+        }
+        const message = 'An unexpected error occurred. Try refreshing and trying again. If that does not solve it, contact the site owner.';
+        if (window.showToast) {
+            window.showToast(message, 'error');
+        } else {
+            alert(message);
+        }
+    }
+
     async function applyCoupon() {
         const codeInput = document.getElementById('coupon-code').value.trim();
         const msgEl = document.getElementById('coupon-message');
@@ -968,13 +1007,17 @@
                 alert('Order placed successfully! Your order ID is ' + data.order_id);
                 window.location.href = '/'; // reset to home
             } else {
-                alert(data.error || 'Checkout failed');
+                if (data && data.error) {
+                    alert(data.error);
+                } else {
+                    notifyUnexpectedError();
+                }
                 btn.disabled = false;
                 btn.textContent = 'Place Order';
             }
         } catch (e) {
             console.error('Checkout error:', e);
-            alert('An unexpected error occurred during checkout');
+            notifyUnexpectedError();
             btn.disabled = false;
             btn.textContent = 'Place Order';
         }

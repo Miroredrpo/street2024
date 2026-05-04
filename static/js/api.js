@@ -42,6 +42,40 @@ function showToast(message, type = 'info') {
 
 window.showToast = showToast;
 
+// unexpected error toast
+const UNEXPECTED_ERROR_MESSAGE = 'An unexpected error occurred. Try refreshing and trying again. If that does not solve it, contact the site owner.';
+const NETWORK_ERROR_MESSAGE = 'Network error. Refresh the page and try again.';
+let lastUnexpectedToastAt = 0;
+let lastNetworkToastAt = 0;
+
+function notifyUnexpectedError() {
+    const now = Date.now();
+    if (now - lastUnexpectedToastAt < 2500) return;
+    lastUnexpectedToastAt = now;
+
+    if (window.showToast) {
+        window.showToast(UNEXPECTED_ERROR_MESSAGE, 'error');
+    } else {
+        alert(UNEXPECTED_ERROR_MESSAGE);
+    }
+}
+
+window.notifyUnexpectedError = notifyUnexpectedError;
+
+function notifyNetworkError() {
+    const now = Date.now();
+    if (now - lastNetworkToastAt < 2500) return;
+    lastNetworkToastAt = now;
+
+    if (window.showToast) {
+        window.showToast(NETWORK_ERROR_MESSAGE, 'error');
+    } else {
+        alert(NETWORK_ERROR_MESSAGE);
+    }
+}
+
+window.notifyNetworkError = notifyNetworkError;
+
 // api fetch
 
 const apiFetch = async (endpoint, options = {}) => {
@@ -70,14 +104,35 @@ const apiFetch = async (endpoint, options = {}) => {
                 const errData = await response.json();
                 if (errData.error) errorMsg = errData.error;
             } catch (e) {}
+            if (response.status >= 500) {
+                notifyUnexpectedError();
+                errorMsg = UNEXPECTED_ERROR_MESSAGE;
+            }
             throw new Error(errorMsg);
         }
 
         return await response.json();
     } catch (error) {
-        // no double toast
+        if (error && typeof error.message === 'string') {
+            const msg = error.message.toLowerCase();
+            if (msg.includes('failed to fetch') || msg.includes('networkerror')) {
+                notifyNetworkError();
+            }
+        }
+        if (!error || !error.message) {
+            notifyUnexpectedError();
+        }
         throw error;
     }
 };
 
 window.apiFetch = apiFetch;
+
+// global error hooks
+window.addEventListener('error', () => {
+    notifyUnexpectedError();
+});
+
+window.addEventListener('unhandledrejection', () => {
+    notifyUnexpectedError();
+});
