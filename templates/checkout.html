@@ -30,11 +30,11 @@
         }
 
         .checkout-form-panel {
-            order: 2;
+            order: 1;
         }
 
         .checkout-summary-panel {
-            order: 1;
+            order: 2;
         }
     }
 
@@ -146,7 +146,7 @@
                 </div>
                 <div style="flex: 1;">
                     <label for="email-address">Email Address *</label>
-                    <input type="email" id="email-address" placeholder="you@example.com"
+                    <input type="email" id="email-address" placeholder="you@example.com" required
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
                 </div>
             </div>
@@ -787,6 +787,15 @@
         return `Rs. ${amount}`;
     }
 
+    function notifyCheckoutErrors(errors) {
+        if (!errors || !errors.length) return;
+        if (window.showToast) {
+            errors.forEach(msg => window.showToast(msg, 'error'));
+        } else {
+            alert(errors.join('\n'));
+        }
+    }
+
     async function applyCoupon() {
         const codeInput = document.getElementById('coupon-code').value.trim();
         const msgEl = document.getElementById('coupon-message');
@@ -851,39 +860,39 @@
         const nepalZone = document.getElementById('nepal-zone') ? document.getElementById('nepal-zone').value : '';
 
         const instagramUsername = instagramRaw.replace(/@/g, '');
+        const errors = [];
 
-        if (!fullName || !instagramUsername || !country || !address || !contactNumber) {
-            alert('Please fill out all required shipping fields');
-            return;
+        if (!fullName) errors.push('Full name is required.');
+        if (!emailAddress) errors.push('Email address is required.');
+        if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) {
+            errors.push('Please enter a valid email address.');
+        }
+        if (!instagramUsername) errors.push('Instagram username is required.');
+        if (!country) errors.push('Please select your country.');
+        if (!address) errors.push('Delivery address is required.');
+        if (!contactNumber) errors.push('Contact number is required.');
+
+        if (country === 'Nepal') {
+            if (!nepalZone) errors.push('Please choose inside or outside valley for Nepal delivery.');
+            if (!province) errors.push('Province is required for Nepal orders.');
+            if (!district) errors.push('District is required for Nepal orders.');
         }
 
-        if (country === 'Nepal' && (!province || !district)) {
-            alert('Please fill out province and district for Nepal orders');
-            return;
+        if (country === 'India') {
+            if (!state) errors.push('State is required for India orders.');
+            if (!zipcode) errors.push('Zip code is required for India orders.');
         }
 
-        if (country === 'Nepal' && !nepalZone) {
-            alert('Please choose inside or outside valley for Nepal delivery');
-            return;
-        }
-
-        if (country === 'Nepal' && !address) {
-            alert('Please fill out delivery address for Nepal orders');
-            return;
-        }
-
-        if (country === 'India' && (!state || !zipcode)) {
-            alert('Please fill out state and zip code for India orders');
-            return;
-        }
-
-        if (!/^\d{10}$/.test(contactNumber)) {
-            alert('Please input a valid 10-digit phone number');
-            return;
+        if (contactNumber && !/^\d{10}$/.test(contactNumber)) {
+            errors.push('Please input a valid 10-digit phone number.');
         }
 
         if (altContactNumber && !/^\d{10}$/.test(altContactNumber)) {
-            alert('Please input a valid 10-digit alternate phone number or leave it blank');
+            errors.push('Please input a valid 10-digit alternate phone number or leave it blank.');
+        }
+
+        if (errors.length) {
+            notifyCheckoutErrors(errors);
             return;
         }
 
@@ -899,7 +908,9 @@
             if (paymentMethodStr === 'fonepay') {
                 const fileInput = document.getElementById('payment-receipt');
                 if (!fileInput.files.length) {
-                    alert("Please upload your payment receipt before submitting.");
+                    notifyCheckoutErrors(['Please upload your payment receipt before submitting.']);
+                    btn.disabled = false;
+                    btn.textContent = 'Place Order';
                     return;
                 }
 
