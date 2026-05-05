@@ -1412,6 +1412,7 @@ html.dark-mode .hero-logo {
     .navbar {
         flex-wrap: wrap;
         gap: var(--space-2);
+        z-index: 1200;
     }
     .navbar .logo {
         order: 1;
@@ -1420,22 +1421,58 @@ html.dark-mode .hero-logo {
         display: inline-flex;
         order: 2;
         margin-left: auto;
+        z-index: 1202;
     }
 
     .nav-actions {
         display: flex;
-        width: 100%;
-        padding: var(--space-2) 0;
-        border-top: 1px solid var(--border);
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        order: 3;
-        max-height: 0;
+        flex-direction: column;
+        gap: var(--space-2);
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: min(84vw, 320px);
+        padding: calc(var(--space-4) + 10px) var(--space-3) var(--space-3);
+        background: var(--bg-primary);
+        border-right: 1px solid var(--border);
+        box-shadow: var(--shadow-lg);
+        transform: translateX(-105%);
         opacity: 0;
-        transform: translateY(-6px);
-        overflow: hidden;
         pointer-events: none;
-        transition: max-height 260ms ease, opacity 200ms ease, transform 200ms ease;
+        transition: transform 260ms ease, opacity 200ms ease;
+        z-index: 1201;
+    }
+    .nav-actions > * {
+        width: 100%;
+    }
+    .nav-actions a,
+    .nav-actions button,
+    .nav-actions select {
+        justify-content: flex-start;
+    }
+    .nav-actions .btn,
+    .nav-actions .btn-icon,
+    .nav-actions .currency-select {
+        width: 100%;
+    }
+    .nav-actions .btn-icon {
+        padding-left: 12px;
+        padding-right: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+    }
+    .nav-actions .currency-select {
+        padding: 10px 36px 10px 12px;
+        border-radius: var(--radius-md);
+    }
+    .nav-actions .btn-ghost {
+        justify-content: center;
+    }
+    .nav-actions #user-greeting {
+        padding: 6px 8px;
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
     }
     .nav-actions .catalog-bubbles {
         width: 100%;
@@ -1445,9 +1482,21 @@ html.dark-mode .hero-logo {
         flex: 1 1 auto;
     }
     .nav-actions.nav-open {
-        max-height: 480px;
+        transform: translateX(0);
         opacity: 1;
-        transform: translateY(0);
+        pointer-events: auto;
+    }
+    .nav-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms ease;
+        z-index: 1190;
+    }
+    .nav-overlay.active {
+        opacity: 1;
         pointer-events: auto;
     }
     .hero h1 {

@@ -128,6 +128,8 @@
         </nav>
     </header>
 
+    <div id="nav-overlay" class="nav-overlay" onclick="closeMobileNav()"></div>
+
     <!-- page -->
     {% block content %}{% endblock %}
 
@@ -173,16 +175,36 @@
     {% block scripts %}{% endblock %}
 
     <script>
-        window.toggleMobileNav = function() {
+        function setMobileNav(open) {
             const nav = document.querySelector('.nav-actions');
             const toggle = document.querySelector('.nav-toggle');
-            if (nav) nav.classList.toggle('nav-open');
+            const overlay = document.getElementById('nav-overlay');
+            if (nav) nav.classList.toggle('nav-open', open);
             if (toggle) {
-                const isOpen = nav && nav.classList.contains('nav-open');
-                toggle.classList.toggle('nav-toggle-open', isOpen);
-                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                toggle.classList.toggle('nav-toggle-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
             }
+            if (overlay) {
+                overlay.classList.toggle('active', open);
+            }
+        }
+
+        window.toggleMobileNav = function() {
+            const nav = document.querySelector('.nav-actions');
+            const isOpen = !!(nav && nav.classList.contains('nav-open'));
+            setMobileNav(!isOpen);
         };
+
+        window.closeMobileNav = function() {
+            setMobileNav(false);
+        };
+
+        const navDrawer = document.querySelector('.nav-actions');
+        if (navDrawer) {
+            navDrawer.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+        }
 
         // sync theme
         if (document.documentElement.classList.contains('dark-mode')) {

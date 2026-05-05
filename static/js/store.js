@@ -441,6 +441,7 @@
             cartOverlay.classList.remove('active');
             document.body.style.overflow = '';
         } else {
+            if (window.closeMobileNav) window.closeMobileNav();
             cartSidebar.classList.add('open');
             cartOverlay.classList.add('active');
             document.body.style.overflow = 'hidden';
