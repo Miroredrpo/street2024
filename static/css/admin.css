@@ -30,6 +30,7 @@
     font-size: var(--font-size-base);
     font-weight: 700;
     letter-spacing: -0.03em;
+    font-family: var(--font-heading);
 }
 
 .admin-sidebar-header .admin-subtitle {
@@ -161,6 +162,7 @@
 .admin-topbar-left h1 {
     font-size: var(--font-size-xl);
     font-weight: 600;
+    font-family: var(--font-heading);
 }
 
 .admin-topbar-right {
@@ -219,6 +221,7 @@
     font-size: var(--font-size-2xl);
     font-weight: 700;
     color: var(--text-main);
+    font-family: var(--font-heading);
 }
 
 .stat-card-footer {
@@ -456,6 +459,7 @@
 
 .admin-modal-header h2 {
     font-size: var(--font-size-xl);
+    font-family: var(--font-heading);
 }
 
 .product-image-preview {
@@ -633,7 +637,7 @@
 .responsive-search-input:focus-visible {
     outline: none;
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 .responsive-coupon-form {

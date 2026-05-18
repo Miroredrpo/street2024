@@ -1,53 +1,53 @@
 {% extends "base.html" %}
 
-{% block title %}Street Customize {% endblock %}
+{% block title %}Street Customize — Custom Streetwear{% endblock %}
 
 {% block content %}
 <!-- hero -->
-<section class="hero" style="position: relative; overflow: hidden; padding: 120px 20px; background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-primary) 100%);">
+<section class="hero">
 
     <div class="hero-logo-wrap" aria-hidden="true">
         <img class="hero-logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="" loading="lazy">
     </div>
-    <div class="container" style="position: relative; z-index: 1;">
-        <h1 class="hero-title" style="font-weight: 900; letter-spacing: -2px; text-transform: uppercase; font-size: clamp(3rem, 8vw, 6rem); margin-bottom: 20px; text-shadow: 2px 2px 0px var(--accent);">STREET<br/><span style="color: var(--accent);">CUSTOMIZE</span></h1>
-        <p class="hero-subtitle" style="font-size: 1.25rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; max-width: 600px;">Join the community </p>
+    <div class="container">
+        <h1 class="hero-title">STREET<br/><span class="hero-title-accent">CUSTOMIZE</span></h1>
+        <p class="hero-subtitle">Join the community</p>
     </div>
 </section>
 
 
 <!-- products -->
-<section class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8);">
-    <div class="section-header">
+<section class="container section-block">
+    <div class="section-header reveal">
         <h2>Our Collection</h2>
     </div>
 
-    <div id="catalog-bubbles" class="catalog-bubbles"></div>
+    <div id="catalog-bubbles" class="catalog-bubbles reveal"></div>
 
     <div id="catalog-sections">
         <div class="product-grid">
             <!-- skeletons -->
             <div class="skeleton-card">
                 <div class="skeleton-image"></div>
-                <div class="skeleton-text medium" style="margin-top:12px;"></div>
+                <div class="skeleton-text medium spaced"></div>
                 <div class="skeleton-text short"></div>
                 <div class="skeleton-btn"></div>
             </div>
             <div class="skeleton-card">
                 <div class="skeleton-image"></div>
-                <div class="skeleton-text medium" style="margin-top:12px;"></div>
+                <div class="skeleton-text medium spaced"></div>
                 <div class="skeleton-text short"></div>
                 <div class="skeleton-btn"></div>
             </div>
             <div class="skeleton-card">
                 <div class="skeleton-image"></div>
-                <div class="skeleton-text medium" style="margin-top:12px;"></div>
+                <div class="skeleton-text medium spaced"></div>
                 <div class="skeleton-text short"></div>
                 <div class="skeleton-btn"></div>
             </div>
             <div class="skeleton-card">
                 <div class="skeleton-image"></div>
-                <div class="skeleton-text medium" style="margin-top:12px;"></div>
+                <div class="skeleton-text medium spaced"></div>
                 <div class="skeleton-text short"></div>
                 <div class="skeleton-btn"></div>
             </div>
@@ -58,7 +58,7 @@
 <!-- feedback -->
 <section class="feedback-section">
     <div class="container">
-        <div class="section-header">
+        <div class="section-header reveal">
             <h2>Customer Feedback</h2>
         </div>
         <div class="feedback-carousel">

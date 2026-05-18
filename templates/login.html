@@ -3,48 +3,6 @@
 {% block title %}Log in / Sign up - Street Customize{% endblock %}
 
 {% block content %}
-<style>
-    .auth-container {
-        max-width: 400px;
-        margin: 4rem auto;
-        padding: 2rem;
-        background: var(--bg-primary);
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .auth-header {
-        margin-bottom: 1.5rem;
-        text-align: center;
-    }
-    .auth-header h2 {
-        font-family: 'Playfair Display', serif;
-        margin-bottom: 0.5rem;
-    }
-    .form-toggle, .forgot-password-link {
-        text-align: center;
-        margin-top: 1rem;
-        font-size: 0.9rem;
-    }
-    .form-group {
-        margin-bottom: 1rem;
-    }
-    .form-group label {
-        display: block;
-        margin-bottom: 0.4rem;
-        font-weight: 500;
-    }
-    .form-group input {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-    }
-    .form-error {
-        color: var(--error);
-        margin-bottom: 1rem;
-        text-align: center;
-    }
-</style>
 
 <div class="auth-container">
     <div class="auth-header">
@@ -52,7 +10,7 @@
     </div>
 
     <form id="auth-form" onsubmit="handleAuth(event)">
-        <div id="fullname-group" class="form-group" style="display:none;">
+        <div id="fullname-group" class="form-group is-hidden">
             <label for="auth-fullname">Full Name</label>
             <input type="text" id="auth-fullname" placeholder="Your name">
         </div>
@@ -64,9 +22,9 @@
             <label for="auth-password">Password</label>
             <input type="password" id="auth-password" placeholder="••••••••" required>
         </div>
-        <p id="auth-error" class="form-error" style="display:none;"></p>
+        <p id="auth-error" class="form-error is-hidden"></p>
         
-        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-lg" style="width:100%;margin-top:8px;">
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-lg btn-block mt-space-1">
             Log in
         </button>
     </form>
@@ -137,22 +95,12 @@
                 if (error) throw error;
                 if (data?.user && data?.session === null) {
                     toggleAuthMode();
-                    if (typeof showToast === 'function') {
-                        showToast('Account created! Check your email to verify.', 'success');
-                    } else {
-                        alert('Account created! Check your email to verify.');
-                    }
-                    return;
+                    showToast('Account created! Check your email to verify.', 'success');
                 }
                 
                 // session without email confirm
                 toggleAuthMode();
-                if (typeof showToast === 'function') {
-                    showToast('Account created successfully! Please log in.', 'success');
-                } else {
-                    alert('Account created successfully! Please log in.');
-                }
-                return;
+                showToast('Account created successfully! Please log in.', 'success');
             }
             // login fallback
             setTimeout(() => {

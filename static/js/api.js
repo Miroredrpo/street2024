@@ -56,7 +56,7 @@ function notifyUnexpectedError() {
     if (window.showToast) {
         window.showToast(UNEXPECTED_ERROR_MESSAGE, 'error');
     } else {
-        alert(UNEXPECTED_ERROR_MESSAGE);
+        showToast(UNEXPECTED_ERROR_MESSAGE, 'error');
     }
 }
 
@@ -70,7 +70,7 @@ function notifyNetworkError() {
     if (window.showToast) {
         window.showToast(NETWORK_ERROR_MESSAGE, 'error');
     } else {
-        alert(NETWORK_ERROR_MESSAGE);
+        showToast(NETWORK_ERROR_MESSAGE, 'error');
     }
 }
 

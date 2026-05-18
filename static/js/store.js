@@ -521,6 +521,7 @@
                     <div class="cart-item-details">
                         <div class="cart-item-title">${escapeHtml(product.title)}</div>
                         ${item.size ? `<div class="cart-item-size" style="font-size: var(--font-size-xs); color: var(--text-muted);">Size: ${escapeHtml(item.size)}</div>` : ''}
+                        ${item.color ? `<div class="cart-item-size" style="font-size: var(--font-size-xs); color: var(--text-muted);">Color: ${escapeHtml(item.color)}</div>` : ''}
                         <div class="cart-item-timer highlight-alert" data-expires="${item.expires_at || ''}" style="font-size:var(--font-size-xs); color:var(--info-color); margin-top:4px;"></div>
                         <div class="cart-item-price">${priceHtml}</div>
                     </div>
@@ -617,7 +618,7 @@
     };
 
     // add to cart
-    window.addToCart = async function (productId, size = null) {
+    window.addToCart = async function (productId, size = null, color = null) {
 
         // qty from pdp
         const pdpQtyEl = document.getElementById('pdp-qty');
@@ -626,7 +627,7 @@
         try {
             await apiFetch('/api/cart', {
                 method: 'POST',
-                body: JSON.stringify({ product_id: productId, quantity, size })
+                body: JSON.stringify({ product_id: productId, quantity, size, color })
             });
             await fetchCart();
             

@@ -24,39 +24,39 @@
     }
 }
 </script>
+<style>
+    .review-stars {
+        display: inline-flex;
+        gap: 6px;
+    }
+    .review-stars .star-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-muted);
+        font-size: 1.35rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    }
+    .review-stars .star-btn:hover {
+        transform: translateY(-1px);
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--bg-primary);
+    }
+    .review-stars .star-btn.selected {
+        color: #f59e0b;
+        border-color: #f59e0b;
+        background: #fff7ed;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <style>
-        .review-stars {
-            display: inline-flex;
-            gap: 6px;
-        }
-        .review-stars .star-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1px solid var(--border);
-            background: var(--bg-secondary);
-            color: var(--text-muted);
-            font-size: 1.35rem;
-            line-height: 1;
-            cursor: pointer;
-            transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-        }
-        .review-stars .star-btn:hover {
-            transform: translateY(-1px);
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--bg-primary);
-        }
-        .review-stars .star-btn.selected {
-            color: #f59e0b;
-            border-color: #f59e0b;
-            background: #fff7ed;
-        }
-    </style>
     <div class="pdp-layout">
         <!-- image -->
         <div class="pdp-image-col">
@@ -69,15 +69,15 @@
                 >
             </div>
             {% if product.images and product.images|length > 0 %}
-            <div class="pdp-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto;">
-                <img src="{{ product.image_url }}" 
-                     onclick="document.getElementById('pdp-product-image').src=this.src"
-                     style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 1px solid var(--border); border-radius: 4px;">
+            <div class="pdp-thumbnails">
+                <img class="pdp-thumb active" src="{{ product.image_url }}" 
+                     onclick="selectThumb(this)"
+                     alt="Main view">
                 {% for img in product.images %}
-                <img src="{{ img }}" 
+                <img class="pdp-thumb" src="{{ img }}" 
                      onerror="this.onerror=null; this.parentElement.removeChild(this);"
-                     onclick="document.getElementById('pdp-product-image').src=this.src"
-                     style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 1px solid var(--border); border-radius: 4px;">
+                     onclick="selectThumb(this)"
+                     alt="View {{ loop.index + 1 }}">
                 {% endfor %}
             </div>
             {% endif %}
@@ -127,10 +127,26 @@
             <p class="pdp-description">{{ product.description }}</p>
             {% endif %}
 
+            <!-- trust signals -->
+            <div class="pdp-trust-row">
+                <div class="pdp-trust-badge">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Quality Guaranteed
+                </div>
+                <div class="pdp-trust-badge">
+                    <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    Fast Delivery
+                </div>
+                <div class="pdp-trust-badge">
+                    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    2 Day Exchange
+                </div>
+            </div>
+
             {% if product.sizes and product.sizes|length > 0 %}
             <div class="pdp-sizes" style="margin: 20px 0;">
-                <label style="display:block;margin-bottom:8px;font-weight:600;">Size:</label>
-                <div style="display:flex; gap:10px;">
+                <label class="pdp-field-label">Size:</label>
+                <div class="pdp-options-row">
                     {% for size in product.sizes %}
                     <button type="button" class="btn btn-outline size-btn" onclick="selectSize(this, '{{ size }}')" style="min-width: 44px;">{{ size }}</button>
                     {% endfor %}
@@ -146,6 +162,25 @@
                     btn.style.backgroundColor = 'var(--accent)';
                     btn.style.color = 'var(--bg-primary)';
                     document.getElementById('selected-size').value = size;
+                }
+            </script>
+            {% endif %}
+
+            {% if product.colors and product.colors|length > 0 %}
+            <div class="pdp-colors" style="margin: 18px 0 24px;">
+                <label class="pdp-field-label">Color:</label>
+                <div class="pdp-color-options">
+                    {% for color in product.colors %}
+                    <button type="button" class="color-swatch" onclick="selectColor(this, '{{ color }}')" aria-label="{{ color }}" style="--swatch-color: {{ color }}"></button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" id="selected-color" value="">
+            </div>
+            <script>
+                function selectColor(btn, color) {
+                    document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    document.getElementById('selected-color').value = color;
                 }
             </script>
             {% endif %}
@@ -168,11 +203,17 @@
                 function handlePDPAddToCart(pid) {
                     const sizeInput = document.getElementById('selected-size');
                     const size = sizeInput ? sizeInput.value : null;
+                    const colorInput = document.getElementById('selected-color');
+                    const color = colorInput ? colorInput.value : null;
                     if (sizeInput && !size) {
-                        alert("Please select a size before adding to cart.");
+                        showToast('Please select a size before adding to cart.', 'error');
                         return;
                     }
-                    addToCart(pid, size);
+                    if (colorInput && !color) {
+                        showToast('Please select a color before adding to cart.', 'error');
+                        return;
+                    }
+                    addToCart(pid, size, color);
                 }
             </script>
             {% else %}
@@ -181,11 +222,25 @@
             </button>
             {% endif %}
 
-            <div class="pdp-reviews" style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border);">
-                <h3 style="margin-bottom: 12px;">Reviews</h3>
-                <div class="review-form" style="margin-bottom: 16px;">
-                    <div style="display:flex; gap: 10px; align-items:center; margin-bottom: 10px;">
-                        <span style="font-weight: 600;">Your Rating:</span>
+            <div class="pdp-reviews">
+                <div class="reviews-panel">
+                    <div class="reviews-header">
+                        <div class="reviews-title">Reviews <span id="review-count-pill">(0)</span></div>
+                        <div class="reviews-caret" aria-hidden="true">^</div>
+                    </div>
+                    <div class="reviews-summary">
+                        <div class="reviews-score">
+                            <div id="reviews-stars" class="reviews-stars">★★★★★</div>
+                            <div class="reviews-score-text"><span id="reviews-average">0.0</span> / 5.0</div>
+                        </div>
+                        <div id="reviews-snippet" class="reviews-snippet">No reviews yet.</div>
+                        <a class="reviews-link" href="#review-list">Read All Reviews</a>
+                    </div>
+                </div>
+
+                <div class="review-form">
+                    <div class="review-form-header">
+                        <span class="review-form-label">Your Rating</span>
                         <div id="review-stars" class="review-stars">
                             <button type="button" class="star-btn" data-value="1" aria-label="1 star">☆</button>
                             <button type="button" class="star-btn" data-value="2" aria-label="2 stars">☆</button>
@@ -194,15 +249,15 @@
                             <button type="button" class="star-btn" data-value="5" aria-label="5 stars">☆</button>
                         </div>
                     </div>
-                    <textarea id="review-text" maxlength="1000" placeholder="Share your thoughts..." style="width:100%; min-height:120px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); font-family: var(--font-family); font-size: var(--font-size-sm); resize: vertical;"></textarea>
-                    <div style="display:flex; justify-content: space-between; align-items:center; margin-top: 8px;">
-                        <small id="review-count" style="color: var(--text-muted);">0 / 1000</small>
+                    <textarea id="review-text" maxlength="1000" placeholder="Share your thoughts..."></textarea>
+                    <div class="review-form-footer">
+                        <small id="review-count">0 / 1000</small>
                         <button class="btn btn-primary btn-sm" onclick="submitReview()">Submit Review</button>
                     </div>
                 </div>
 
-                <div id="review-list" style="display:grid; gap: 12px;">
-                    <p style="color: var(--text-muted);">Loading reviews...</p>
+                <div id="review-list" class="reviews-list">
+                    <p class="reviews-loading">Loading reviews...</p>
                 </div>
             </div>
         </div>
@@ -216,6 +271,12 @@
     let pdpQty = 1;
     let selectedRating = 0;
     let reviewsLoaded = false;
+
+    function selectThumb(img) {
+        document.querySelectorAll('.pdp-thumb').forEach(t => t.classList.remove('active'));
+        img.classList.add('active');
+        document.getElementById('pdp-product-image').src = img.src;
+    }
 
     function changeQty(delta) {
         const stockStr = "{{ product.stock }}";
@@ -261,18 +322,20 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load reviews');
 
+            updateReviewSummary(data);
+
             if (!data || data.length === 0) {
-                list.innerHTML = '<p style="color: var(--text-muted);">No reviews yet. Be the first!</p>';
+                list.innerHTML = '<p class="reviews-empty">No reviews yet. Be the first!</p>';
                 return;
             }
 
             list.innerHTML = data.map(r => `
-                <div style="padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-primary);">
-                    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 6px;">
-                        <div style="font-size: var(--font-size-sm);">${renderStars(r.rating)}</div>
-                        <small style="color: var(--text-muted);">${new Date(r.created_at).toLocaleDateString()}</small>
+                <div class="review-card">
+                    <div class="review-card-header">
+                        <div class="review-card-stars">${renderStars(r.rating)}</div>
+                        <small class="review-card-date">${new Date(r.created_at).toLocaleDateString()}</small>
                     </div>
-                    <div style="font-size: var(--font-size-sm); color: var(--text-main);">${escapeHtml(r.review_text)}</div>
+                    <div class="review-card-body">${escapeHtml(r.review_text)}</div>
                 </div>
             `).join('');
         } catch (err) {
@@ -280,15 +343,50 @@
         }
     }
 
+    function updateReviewSummary(reviews) {
+        const countEl = document.getElementById('review-count-pill');
+        const avgEl = document.getElementById('reviews-average');
+        const starsEl = document.getElementById('reviews-stars');
+        const snippetEl = document.getElementById('reviews-snippet');
+
+        if (!reviews || reviews.length === 0) {
+            if (countEl) countEl.textContent = '(0)';
+            if (avgEl) avgEl.textContent = '0.0';
+            if (starsEl) starsEl.textContent = '☆☆☆☆☆';
+            if (snippetEl) snippetEl.textContent = 'No reviews yet.';
+            return;
+        }
+
+        const ratings = reviews.map(r => parseInt(r.rating, 10) || 0).filter(Boolean);
+        const total = ratings.reduce((sum, val) => sum + val, 0);
+        const avg = ratings.length ? total / ratings.length : 0;
+        const rounded = Math.round(avg * 10) / 10;
+        const topReview = reviews[0];
+        const snippet = topReview && topReview.review_text
+            ? `"${truncateText(topReview.review_text, 140)}"`
+            : 'No reviews yet.';
+
+        if (countEl) countEl.textContent = `(${reviews.length})`;
+        if (avgEl) avgEl.textContent = rounded.toFixed(1);
+        if (starsEl) starsEl.textContent = renderStars(Math.round(avg));
+        if (snippetEl) snippetEl.textContent = snippet;
+    }
+
+    function truncateText(text, maxLen) {
+        const trimmed = (text || '').trim();
+        if (trimmed.length <= maxLen) return trimmed;
+        return `${trimmed.slice(0, maxLen - 1)}...`;
+    }
+
     async function submitReview() {
         const textEl = document.getElementById('review-text');
         if (!selectedRating) {
-            alert('Please select a rating.');
+            showToast('Please select a rating.', 'error');
             return;
         }
         const reviewText = textEl.value.trim();
         if (!reviewText) {
-            alert('Please write a review.');
+            showToast('Please write a review.', 'error');
             return;
         }
 
@@ -307,7 +405,7 @@
             updateReviewCount();
             loadReviews();
         } catch (err) {
-            alert(err.message);
+            showToast(err.message, 'error');
         }
     }
 

@@ -3,233 +3,72 @@
 {% block title %}Checkout - Street Customize{% endblock %}
 
 {% block content %}
-<style>
-    .checkout-page {
-        background: var(--bg-secondary);
-        padding: 2rem 0 3rem;
-    }
-
-    .checkout-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 2rem;
-        display: grid;
-        grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-        gap: 2.5rem;
-        align-items: start;
-    }
-
-    .checkout-section {
-        background: var(--bg-primary);
-        padding: 2.25rem;
-        border-radius: 12px;
-        box-shadow: var(--shadow-md);
-    }
-
-    .checkout-form-panel {
-        grid-column: 1 / 2;
-        grid-row: 1 / span 2;
-    }
-
-    .checkout-summary-panel {
-        grid-column: 2 / 3;
-        grid-row: 1;
-    }
-
-    .checkout-payment-panel {
-        grid-column: 2 / 3;
-        grid-row: 2;
-        width: 100%;
-        justify-self: stretch;
-    }
-
-    .checkout-title {
-        font-size: 1.5rem;
-        font-family: 'Playfair Display', serif;
-        margin-bottom: 1.5rem;
-    }
-
-    .order-summary-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .order-summary-item img {
-        width: 50px;
-        height: 50px;
-        object-fit: cover;
-        border-radius: 4px;
-        margin-right: 1rem;
-    }
-
-    .item-details {
-        flex: 1;
-    }
-
-    .item-price {
-        font-weight: bold;
-    }
-
-    .total-row {
-        display: flex;
-        justify-content: space-between;
-        font-weight: bold;
-        font-size: 1.2rem;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 2px solid #333;
-    }
-
-    .discount-row {
-        display: flex;
-        justify-content: space-between;
-        color: var(--success);
-        margin-top: 0.5rem;
-    }
-
-    .coupon-section {
-        margin-top: 2rem;
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .coupon-section input {
-        flex: 1;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-    }
-
-    .coupon-message {
-        margin-top: 0.5rem;
-        font-size: 0.9rem;
-    }
-
-    .success {
-        color: var(--success);
-    }
-
-    .error {
-        color: var(--error);
-    }
-
-    #shipping-address {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        margin-bottom: 1rem;
-    }
-
-    @media (max-width: 768px) {
-        .checkout-container {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-
-        .checkout-section {
-            padding: 1.25rem;
-        }
-
-        .checkout-form-panel {
-            order: 1;
-            grid-column: 1 / -1;
-            grid-row: auto;
-        }
-
-        .checkout-summary-panel {
-            order: 2;
-            grid-column: 1 / -1;
-            grid-row: auto;
-        }
-
-        .checkout-payment-panel {
-            order: 3;
-            grid-column: 1 / -1;
-            grid-row: auto;
-            max-width: none;
-            justify-self: stretch;
-        }
-    }
-</style>
-
 <div class="checkout-page">
     <div class="checkout-container">
         <!-- form -->
         <div class="checkout-section checkout-form-panel">
             <h2 class="checkout-title">1. Customer Details & Location</h2>
-            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
-                <div style="flex: 1;">
+            <div class="checkout-form-row">
+                <div>
                     <label for="full-name">Full Name *</label>
-                    <input type="text" id="full-name" placeholder="Full name" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <input type="text" id="full-name" class="checkout-input" placeholder="Full name" required>
                 </div>
-                <div style="flex: 1;">
+                <div>
                     <label for="email-address">Email Address *</label>
-                    <input type="email" id="email-address" placeholder="you@example.com" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <input type="email" id="email-address" class="checkout-input" placeholder="you@example.com" required>
                 </div>
             </div>
 
-            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
-                <div style="flex: 1;">
+            <div class="checkout-form-row">
+                <div>
                     <label for="instagram-username">Instagram Username *</label>
-                    <input type="text" id="instagram-username" placeholder="username (without @)" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <input type="text" id="instagram-username" class="checkout-input" placeholder="username (without @)" required>
                 </div>
-                <div style="flex: 1;">
+                <div>
                     <label for="contact-number">Contact Number *</label>
-                    <input type="tel" id="contact-number" placeholder="Enter 10-digit number" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <input type="tel" id="contact-number" class="checkout-input" placeholder="Enter 10-digit number" required>
                 </div>
             </div>
 
-            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-bottom: 1rem;">
-                <div style="flex: 1;">
+            <div class="checkout-form-row">
+                <div>
                     <label for="alt-contact-number">Alternate Number (Optional)</label>
-                    <input type="tel" id="alt-contact-number" placeholder="Optional 10-digit number"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <input type="tel" id="alt-contact-number" class="checkout-input" placeholder="Optional 10-digit number">
                 </div>
-                <div style="flex: 1;"></div>
+                <div></div>
             </div>
 
-            <h2 class="checkout-title" style="margin-top: 2rem;">Shipping Information</h2>
+            <h2 class="checkout-title mt-space-4">Shipping Information</h2>
 
-            <div class="form-group row" style="display: flex; gap: var(--space-4);">
-                <div style="flex: 1;">
+            <div class="checkout-form-row">
+                <div>
                     <label for="country">Country</label>
-                    <select id="country" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <select id="country" class="checkout-input" required>
                         <option value="">Select your country</option>
                         <option value="Nepal">Nepal</option>
                         <option value="India">India</option>
                     </select>
                 </div>
-                <div style="flex: 1;"></div>
+                <div></div>
             </div>
 
-            <div id="nepal-fields" style="display: none;">
-                <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
-                    <div style="flex: 1;">
+            <div id="nepal-fields" class="is-hidden">
+                <div class="checkout-form-row mt-space-2">
+                    <div>
                         <label for="nepal-zone">Delivery Area</label>
-                        <select id="nepal-zone"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                        <select id="nepal-zone" class="checkout-input">
                             <option value="">Select area</option>
                             <option value="inside_valley">Inside Valley</option>
                             <option value="outside_valley">Outside Valley</option>
                         </select>
                     </div>
-                    <div style="flex: 1;"></div>
+                    <div></div>
                 </div>
 
-                <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
-                    <div style="flex: 1;">
+                <div class="checkout-form-row mt-space-2">
+                    <div>
                         <label for="province">Province</label>
-                        <select id="province"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                        <select id="province" class="checkout-input">
                             <option value="">Select Province</option>
                             <option value="Koshi">Koshi</option>
                             <option value="Madhesh">Madhesh</option>
@@ -240,46 +79,41 @@
                             <option value="Sudurpashchim">Sudurpashchim</option>
                         </select>
                     </div>
-                    <div style="flex: 1;">
+                    <div>
                         <label for="district">District</label>
-                        <input type="text" id="district" placeholder="e.g. Kathmandu"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                        <input type="text" id="district" class="checkout-input" placeholder="e.g. Kathmandu">
                     </div>
                 </div>
 
             </div>
 
-            <div id="india-fields" style="display: none;">
-                <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
-                    <div style="flex: 1;">
+            <div id="india-fields" class="is-hidden">
+                <div class="checkout-form-row mt-space-2">
+                    <div>
                         <label for="state">State</label>
-                        <input type="text" id="state" placeholder="e.g. West Bengal"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                        <input type="text" id="state" class="checkout-input" placeholder="e.g. West Bengal">
                     </div>
-                    <div style="flex: 1;">
+                    <div>
                         <label for="zipcode">Zip Code</label>
-                        <input type="text" id="zipcode" placeholder="e.g. 700001"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                        <input type="text" id="zipcode" class="checkout-input" placeholder="e.g. 700001">
                     </div>
                 </div>
             </div>
 
-            <div class="form-group row" style="display: flex; gap: var(--space-4); margin-top: 1rem;">
-                <div style="flex: 1;">
+            <div class="checkout-form-row mt-space-2">
+                <div>
                     <label for="shipping-address">Location / Delivery Address</label>
-                    <input type="text" id="shipping-address" placeholder="e.g. New Road, Ward 22"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px;">
+                    <input type="text" id="shipping-address" class="checkout-input" placeholder="e.g. New Road, Ward 22">
                 </div>
-                <div style="flex: 1;"></div>
+                <div></div>
             </div>
 
-
-            <div class="form-group" style="margin-top: 1rem;">
+            <div class="checkout-form-group">
                 <label for="custom-message">Custom Message (Optional)</label>
-                <textarea id="custom-message"
-                    placeholder="Notes about your order, e.g., special notes for delivery, packaging..."
-                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>
+                <textarea id="custom-message" class="checkout-input checkout-textarea"
+                    placeholder="Notes about your order, e.g., special notes for delivery, packaging..."></textarea>
             </div>
+
 
         </div>
 
@@ -315,34 +149,29 @@
 
         <div class="checkout-section checkout-payment-panel">
             <h2 class="checkout-title">3. Payment</h2>
-            <div style="margin-top: 0.5rem;">
-                <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;">
-                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <div class="checkout-payment-body">
+                <div class="checkout-payment-options">
+                    <label class="checkout-payment-label">
                         <input type="radio" name="payment_method" value="fonepay" checked onchange="togglePayment()">
                         Fonepay
                     </label>
                 </div>
 
-                <div id="online-payment-details"
-                    style="display: none; padding: 1rem; border: 1px solid var(--border); border-radius: 4px; background: var(--surface);">
-                    <p style="margin-bottom: 1rem; text-align: center;">
-                        <img id="qr-code-img" src="/static/img/image.png" alt="Scan to Pay"
-                            style="border-radius: 8px; box-shadow: var(--shadow-sm);">
+                <div id="online-payment-details" class="checkout-payment-details is-hidden">
+                    <p class="checkout-payment-qr">
+                        <img id="qr-code-img" class="checkout-qr-img" src="/static/img/image.png" alt="Scan to Pay">
                     </p>
-                    <p style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Please scan the QR code to
+                    <p class="checkout-payment-note">Please scan the QR code to
                         pay, then upload your receipt below to confirm.</p>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="payment-receipt"
-                            style="font-weight: bold; margin-bottom: 0.5rem; display: block;">Upload Payment Receipt
+                    <div class="checkout-receipt-group">
+                        <label for="payment-receipt" class="checkout-receipt-label">Upload Payment Receipt
                             *</label>
-                        <input type="file" id="payment-receipt" accept="image/*"
-                            style="width: 100%; border: 1px solid var(--border); padding: 0.5rem; border-radius: 4px;">
+                        <input type="file" id="payment-receipt" accept="image/*" class="checkout-file-input">
                     </div>
                 </div>
             </div>
 
-            <button id="place-order-btn" class="btn btn-primary"
-                style="width: 100%; margin-top: 2rem; padding: 1rem; font-size: 1.1rem;" onclick="processCheckout()">
+            <button id="place-order-btn" class="btn btn-primary checkout-place-order" onclick="processCheckout()">
                 Place Order
             </button>
         </div>
@@ -363,7 +192,7 @@
             if (window.showToast) {
                 window.showToast("Please pay the checkout price to the QR code, or the item may not be delivered.", "info");
             } else {
-                alert("Please pay the checkout price to the QR code, or the item may not be delivered.");
+                showToast("Please pay the checkout price to the QR code, or the item may not be delivered.", "info");
             }
         }
 
@@ -644,13 +473,14 @@
             const div = document.createElement('div');
             div.className = 'order-summary-item';
             div.innerHTML = `
-                <div style="display: flex;">
+                <div class="checkout-item-row">
                     <img src="${prod.image_url || '/static/placeholder.png'}" alt="${prod.title}" onerror="this.src='/static/placeholder.png'">
                     <div class="item-details">
-                        <div>${prod.title}</div>
-                        ${item.size ? `<div style="color: var(--text-muted); font-size: 0.8rem;">Size: ${item.size}</div>` : ''}
-                        <div style="color: var(--text-muted); font-size: 0.9rem;">Qty: ${item.quantity} x ${formatAmount(unitPrice)}</div>
-                        <div class="checkout-item-timer" data-expires="${item.expires_at || ''}" style="color:var(--error-color); font-size:0.8rem; font-weight:600; margin-top:4px;"></div>
+                        <div class="checkout-item-title">${prod.title}</div>
+                        ${item.size ? `<div class="checkout-item-meta">Size: ${item.size}</div>` : ''}
+                        ${item.color ? `<div class="checkout-item-meta">Color: ${item.color}</div>` : ''}
+                        <div class="checkout-item-qty">Qty: ${item.quantity} x ${formatAmount(unitPrice)}</div>
+                        <div class="checkout-item-timer" data-expires="${item.expires_at || ''}"></div>
                     </div>
                 </div>
                 <div class="item-price">${formatAmount(lineTotal)}</div>
@@ -818,7 +648,7 @@
         if (window.showToast) {
             errors.forEach(msg => window.showToast(msg, 'error'));
         } else {
-            alert(errors.join('\n'));
+            showToast(errors.join('\\n'), "error");
         }
     }
 
@@ -831,7 +661,7 @@
         if (window.showToast) {
             window.showToast(message, 'error');
         } else {
-            alert(message);
+            showToast(message, "error");
         }
     }
 
@@ -961,7 +791,7 @@
                     });
                     paymentReceiptUrl = await uploadImageToCloudinary(uploadFile, 'receipt');
                 } catch (up_err) {
-                    alert('Error uploading receipt: ' + up_err.message);
+                    showToast('Error uploading receipt: ' + up_err.message, "error");
                     btn.disabled = false;
                     btn.textContent = 'Place Order';
                     return;
@@ -1004,11 +834,11 @@
 
             const data = await res.json();
             if (res.ok) {
-                alert('Order placed successfully! Your order ID is ' + data.order_id);
+                showToast('Order placed successfully! Your order ID is ' + data.order_id, "success");
                 window.location.href = '/'; // reset to home
             } else {
                 if (data && data.error) {
-                    alert(data.error);
+                    showToast(data.error || "Error placing order.", "error");
                 } else {
                     notifyUnexpectedError();
                 }

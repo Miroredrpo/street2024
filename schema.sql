@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   size_chart_url TEXT,
   images TEXT[] DEFAULT '{}',
   sizes TEXT[] DEFAULT '{}',
+  colors TEXT[] DEFAULT '{}',
   stock INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -130,6 +131,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
   product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
   size TEXT,
+  color TEXT,
   quantity INTEGER NOT NULL,
   price_at_time DECIMAL(10, 2) NOT NULL
 );
@@ -169,10 +171,11 @@ CREATE TABLE IF NOT EXISTS public.cart_items (
   session_id TEXT NOT NULL,
   product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
   size TEXT,
+  color TEXT,
   quantity INTEGER NOT NULL DEFAULT 1,
   added_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   expires_at TIMESTAMP WITH TIME ZONE,
-  UNIQUE NULLS NOT DISTINCT (session_id, product_id, size)
+  UNIQUE NULLS NOT DISTINCT (session_id, product_id, size, color)
 );
 
 -- rls
@@ -243,6 +246,12 @@ BEGIN
     END;
 
     BEGIN
+      ALTER TABLE public.products ADD COLUMN colors TEXT[] DEFAULT '{}';
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
       ALTER TABLE public.products ADD COLUMN show_low_stock_label BOOLEAN DEFAULT false;
     EXCEPTION
       WHEN duplicate_column THEN null;
@@ -258,6 +267,36 @@ BEGIN
         ALTER TABLE public.orders ADD COLUMN full_name TEXT;
     EXCEPTION
         WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.cart_items ADD COLUMN color TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.order_items ADD COLUMN color TEXT;
+    EXCEPTION
+      WHEN duplicate_column THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.cart_items DROP CONSTRAINT IF EXISTS cart_items_session_id_product_id_size_key;
+    EXCEPTION
+      WHEN undefined_object THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.cart_items DROP CONSTRAINT IF EXISTS cart_items_session_id_product_id_size_color_key;
+    EXCEPTION
+      WHEN undefined_object THEN null;
+    END;
+
+    BEGIN
+      ALTER TABLE public.cart_items ADD CONSTRAINT cart_items_session_id_product_id_size_color_key UNIQUE NULLS NOT DISTINCT (session_id, product_id, size, color);
+    EXCEPTION
+      WHEN duplicate_object THEN null;
     END;
 
     BEGIN

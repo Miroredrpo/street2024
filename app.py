@@ -115,6 +115,21 @@ def normalize_instagram(username):
     return cleaned.strip()
 
 
+def normalize_color_hex(value):
+    if not value:
+        return None
+    cleaned = value.strip().lower()
+    if not cleaned:
+        return None
+    if not cleaned.startswith("#"):
+        cleaned = f"#{cleaned}"
+    if len(cleaned) not in (4, 7):
+        return None
+    if not all(c in "0123456789abcdef#" for c in cleaned):
+        return None
+    return cleaned
+
+
 def cloudinary_public_id_from_url(url):
     if not url:
         return None
@@ -463,6 +478,7 @@ def add_to_cart():
     product_id = data.get("product_id")
     quantity = data.get("quantity", 1)
     size = data.get("size")
+    color = normalize_color_hex(data.get("color"))
 
     if not product_id:
         return jsonify({"error": "Product ID is required"}), 400
@@ -471,10 +487,20 @@ def add_to_cart():
         cleanup_expired_holds()
 
         # check stock
-        prod_res = supabase_admin.table("products").select("stock").eq("id", product_id).execute()
+        prod_res = supabase_admin.table("products").select("stock, colors").eq("id", product_id).execute()
         if not prod_res.data:
             return jsonify({"error": "Product not found"}), 404
-        max_stock = prod_res.data[0].get("stock", 0)
+        product_record = prod_res.data[0]
+        max_stock = product_record.get("stock", 0)
+        product_colors = product_record.get("colors") or []
+        normalized_colors = [normalize_color_hex(c) for c in product_colors]
+        normalized_colors = [c for c in normalized_colors if c]
+
+        if normalized_colors:
+            if not color:
+                return jsonify({"error": "Color is required"}), 400
+            if color not in normalized_colors:
+                return jsonify({"error": "Selected color is not available"}), 400
 
         # check existing cart item
         query = supabase_admin.table("cart_items").select("*").eq("session_id", session_id).eq("product_id", product_id)
@@ -482,7 +508,7 @@ def add_to_cart():
         
         target_item = None
         for item in existing.data:
-            if item.get("size") == size:
+            if item.get("size") == size and item.get("color") == color:
                 target_item = item
                 break
 
@@ -512,6 +538,8 @@ def add_to_cart():
             }
             if size:
                 payload["size"] = size
+            if color:
+                payload["color"] = color
             
             res = supabase_admin.table("cart_items").insert(payload).execute()
             return jsonify(res.data[0]), 201
@@ -778,6 +806,7 @@ def place_order():
                 "order_id": order['id'],
                 "product_id": item['product_id'],
                 "size": item.get('size'),
+                "color": item.get('color'),
                 "quantity": item['quantity'],
                 "price_at_time": item.get('effective_price', item['products']['price'])
             })

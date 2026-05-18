@@ -169,7 +169,7 @@
         try {
             const { data, error } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
             if (error || data?.role !== 'admin') {
-                alert('Unauthorized: You must be an administrator to view this page.');
+                showToast('Unauthorized: You must be an administrator to view this page.', 'error');
                 window.location.href = '/';
                 return;
             }
@@ -457,6 +457,8 @@
         document.getElementById('prod-active').value = 'true';
         document.getElementById('prod-catalog').value = '';
         document.getElementById('prod-show-low-stock').checked = false;
+        const colorInput = document.getElementById('prod-colors');
+        if (colorInput) colorInput.value = '';
         
         const fileInput = document.getElementById('prod-image');
         fileInput.value = '';
@@ -524,6 +526,10 @@
         }
 
         document.getElementById('prod-sizes').value = (product.sizes || []).join(', ');
+        const colorInput = document.getElementById('prod-colors');
+        if (colorInput) {
+            colorInput.value = (product.colors || []).join(', ');
+        }
         document.getElementById('prod-stock').value = product.stock || 0;
         document.getElementById('prod-active').value = product.is_active !== false ? 'true' : 'false';
         document.getElementById('prod-catalog').value = product.catalog_id || '';
@@ -572,6 +578,22 @@
         }
     };
 
+    function normalizeColorList(input) {
+        if (!input) return [];
+        const raw = input.split(',').map(item => item.trim()).filter(Boolean);
+        const cleaned = [];
+        raw.forEach(value => {
+            let color = value.toLowerCase();
+            if (!color.startsWith('#')) color = `#${color}`;
+            if (color.length === 4 || color.length === 7) {
+                if (/^#[0-9a-f]+$/.test(color)) {
+                    cleaned.push(color);
+                }
+            }
+        });
+        return cleaned;
+    }
+
     window.handleProductSubmit = async function (e) {
         e.preventDefault();
         const btn = document.getElementById('product-submit-btn');
@@ -582,6 +604,7 @@
         const id = document.getElementById('prod-id').value;
         const otherFileInput = document.getElementById('prod-images');
         const sizesStr = document.getElementById('prod-sizes').value;
+        const colorsStr = document.getElementById('prod-colors')?.value || '';
         
         let finalImageUrl = document.getElementById('prod-image').dataset.existingUrl || '';
         const fileInput = document.getElementById('prod-image');
@@ -662,6 +685,7 @@
             size_chart_url: finalSizeChartUrl || null,
             images: finalOtherImages,
             sizes: sizesStr ? sizesStr.split(',').map(s => s.trim()).filter(Boolean) : [],
+            colors: normalizeColorList(colorsStr),
             stock: parseInt(document.getElementById('prod-stock').value, 10),
             is_active: document.getElementById('prod-active').value === 'true',
             catalog_id: document.getElementById('prod-catalog').value || null
@@ -804,7 +828,7 @@
                         <img src="${product.image_url || '/static/fallback.svg'}" alt="" style="width:48px;height:48px;border-radius:6px;object-fit:cover;" onerror="this.onerror=null;this.src='/static/fallback.svg';">
                         <div style="flex:1;">
                             <div style="font-weight: 600;">${escapeHtml(product.title || 'Product')}</div>
-                            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Qty: ${item.quantity}${item.size ? ` | Size: ${escapeHtml(item.size)}` : ''}</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Qty: ${item.quantity}${item.size ? ` | Size: ${escapeHtml(item.size)}` : ''}${item.color ? ` | Color: ${escapeHtml(item.color)}` : ''}</div>
                         </div>
                         <div style="font-weight: 600;">${order.currency === 'INR' ? '₹' : 'Rs. '}${parseFloat(item.price_at_time).toFixed(2)}</div>
                     </div>
@@ -979,7 +1003,7 @@
         const discount_percentage = parseInt(discountInput.value, 10);
         
         if (!code || !discount_percentage || discount_percentage <= 0 || discount_percentage > 100) {
-            alert('Please enter a valid code and a discount percentage between 1 and 100.');
+            showToast('Please enter a valid code and a discount percentage between 1 and 100.', 'error');
             return;
         }
 
@@ -991,10 +1015,10 @@
             codeInput.value = '';
             discountInput.value = '';
             loadCoupons();
-            alert('Coupon created successfully!');
+            showToast('Coupon created successfully!', 'success');
         } catch (e) {
             console.error(e);
-            alert('Error creating coupon: ' + e.message);
+            showToast('Error creating coupon: ' + e.message, 'error');
         }
     };
 
@@ -1007,7 +1031,7 @@
             loadCoupons();
         } catch (e) {
             console.error(e);
-            alert('Error deleting coupon: ' + e.message);
+            showToast('Error deleting coupon: ' + e.message, 'error');
         }
     };
 
@@ -1123,7 +1147,7 @@
         const description = descInput.value.trim();
 
         if (!name) {
-            alert('Catalog name is required.');
+            showToast('Catalog name is required.', 'error');
             return;
         }
 

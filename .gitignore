@@ -9,3 +9,6 @@ OFFERING.md
 migration_checkout.sql
 routes.txt
 UPLOAD_FIX_GUIDE.md
+.gitignore
+changes.md
+changed.md
