@@ -262,13 +262,10 @@ img {
 .hero-logo-wrap {
     position: absolute;
     top: 12px;
-    right: 12px !important;
-    left: auto !important;
-    inset-inline-start: auto !important;
-    inset-inline-end: 12px !important;
+    right: 12px;
     bottom: auto;
     pointer-events: none;
-    z-index: 0;
+    z-index: 2;
 }
 
 .hero-logo {
@@ -299,8 +296,7 @@ img {
 
 @media (max-width: 768px) {
     .hero-logo-wrap {
-        right: 12px !important;
-        inset-inline-end: 12px !important;
+        right: 12px;
     }
 
     .hero-logo {
@@ -574,8 +570,8 @@ html.dark-mode .hero-logo {
 /* hero */
 .hero {
     text-align: center;
-    padding: 28px var(--space-3);
-    min-height: clamp(180px, 28vh, 260px);
+    padding: 120px var(--space-3);
+    min-height: clamp(320px, 45vh, 500px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -600,7 +596,7 @@ html.dark-mode .hero-logo {
     z-index: 0;
 }
 
-.hero > * {
+.hero > *:not(.hero-logo-wrap) {
     position: relative;
     z-index: 1;
 }
@@ -1123,8 +1119,7 @@ html.dark-mode .hero-logo {
 @media (max-width: 768px) {
     .hero-logo-wrap {
         top: 10px;
-        right: 10px !important;
-        inset-inline-end: 10px !important;
+        right: 10px;
     }
 
     .hero-logo {
